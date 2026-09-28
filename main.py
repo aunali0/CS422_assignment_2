@@ -103,7 +103,7 @@ def create_parser() -> argparse.ArgumentParser:
     server = run.add_argument_group("server")
     server.add_argument("--host", required=True, help="Server hostname or IP address")
     server.add_argument("--port", type=port_type, default=5201, help="Server TCP port")
-    
+
     experiment = run.add_argument_group("experiment")
     experiment.add_argument(
         "--duration",
@@ -192,7 +192,7 @@ def receive_state(sock: socket.socket, expected: int, stage: Stage) -> None:
     notify(stage, f"Received {actual_fmt}")
 
 
-def receive_count(sock: socket.socket, count: int) -> bytes:
+def receive_bytes(sock: socket.socket, count: int) -> bytes:
     data = bytearray()
 
     while len(data) < count:
@@ -209,8 +209,8 @@ def receive_count(sock: socket.socket, count: int) -> bytes:
 
 
 def receive_json[T: BaseModel](sock: socket.socket, model: type[T], stage: Stage) -> T:
-    length = int.from_bytes(receive_count(sock, 4))
-    payload_bytes = receive_count(sock, length)
+    length = int.from_bytes(receive_bytes(sock, 4))
+    payload_bytes = receive_bytes(sock, length)
     notify_json(stage, "Received", json.loads(payload_bytes))
     return model.model_validate_json(payload_bytes)
 
