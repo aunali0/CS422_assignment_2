@@ -227,16 +227,6 @@ def send_json(sock: socket.socket, payload: dict[str, object], stage: Stage) -> 
     notify_json(stage, "Sent", payload)
 
 
-def check_closed_connection(sock: socket.socket, timeout: float, stage: Stage) -> None:
-    sock.settimeout(timeout)
-    msg = sock.recv(1)
-
-    if msg:
-        raise ConnectionError(f"Expected connection closure, received 0x{msg.hex()}")
-
-    notify(stage, "Server closed connection")
-
-
 def run_client(
     host: str,
     port: int,
