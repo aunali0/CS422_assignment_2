@@ -11,8 +11,9 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 BUF_SIZE = 131072
+LOG_PREFIX_WIDTH = 9
 
-Stage = Literal["control", "data", "test"]
+LogMsgType = Literal["control", "data"]
 
 
 class State(IntEnum):
@@ -151,20 +152,20 @@ def generate_cookie() -> bytes:
     return cookie.encode("ascii") + b"\x00"
 
 
-def notify(stage: Stage, msg: str) -> None:
-    print(f"{f'[{stage}]':<9} {msg}", flush=True)
+def log_message(msg_type: LogMsgType, msg: str) -> None:
+    print(f"{f'[{msg_type}]':<{LOG_PREFIX_WIDTH}} {msg}")
 
 
-def notify_json(stage: Stage, action: Literal["Sent", "Received"], payload: object) -> None:
-    notify(stage, f"{action} JSON:")
+def log_json(msg_type: LogMsgType, action: str, payload: object) -> None:
+    log_message(msg_type, f"{action} JSON:")
     json_fmt = json.dumps(payload, indent=2, ensure_ascii=False)
 
     for line in json_fmt.splitlines():
-        print(f"{'':9} {line}", flush=True)
+        print(f"{'':{LOG_PREFIX_WIDTH}} {line}")
 
 
-def notify_test(bytes_sent: int, time_passed: float, duration: int) -> None:
-    notify("test", f"{time_passed:.1f}s / {duration}s | {bytes_sent / (1024 * 1024):.2f} MiB sent")
+def log_data_progress(bytes_sent: int, time_passed: float, duration: int) -> None:
+    log_message("data", f"{time_passed:.1f}s / {duration}s | {bytes_sent / (1024 * 1024):.2f} MiB sent")
 
 
 def format_state(value: int) -> str:
@@ -176,7 +177,7 @@ def format_state(value: int) -> str:
     return f"{name} ({value:#04x})"
 
 
-def receive_state(sock: socket.socket, expected: int, stage: Stage) -> None:
+def receive_state(sock: socket.socket, expected: int, msg_type: LogMsgType) -> None:
     exp_fmt = format_state(expected)
     msg = sock.recv(1)
 
@@ -189,7 +190,7 @@ def receive_state(sock: socket.socket, expected: int, stage: Stage) -> None:
     if actual != expected:
         raise ConnectionError(f"Received {actual_fmt}: expected {exp_fmt}")
 
-    notify(stage, f"Received {actual_fmt}")
+    log_message(msg_type, f"Received {actual_fmt}")
 
 
 def receive_bytes(sock: socket.socket, count: int) -> bytes:
@@ -208,23 +209,23 @@ def receive_bytes(sock: socket.socket, count: int) -> bytes:
     return bytes(data)
 
 
-def receive_json[T: BaseModel](sock: socket.socket, model: type[T], stage: Stage) -> T:
+def receive_json[T: BaseModel](sock: socket.socket, model: type[T], msg_type: LogMsgType) -> T:
     length = int.from_bytes(receive_bytes(sock, 4))
     payload_bytes = receive_bytes(sock, length)
-    notify_json(stage, "Received", json.loads(payload_bytes))
+    log_json(msg_type, "Received", json.loads(payload_bytes))
     return model.model_validate_json(payload_bytes)
 
 
-def send_state(sock: socket.socket, b: int, stage: Stage) -> None:
+def send_state(sock: socket.socket, b: int, msg_type: LogMsgType) -> None:
     sock.sendall(int.to_bytes(b))
-    notify(stage, f"Sent {format_state(b)}")
+    log_message(msg_type, f"Sent {format_state(b)}")
 
 
-def send_json(sock: socket.socket, payload: dict[str, object], stage: Stage) -> None:
+def send_json(sock: socket.socket, payload: dict[str, object], msg_type: LogMsgType) -> None:
     payload_bytes = json.dumps(payload, separators=(",", ":"), allow_nan=False).encode("utf-8")
     len_bytes = len(payload_bytes).to_bytes(4)
     sock.sendall(len_bytes + payload_bytes)
-    notify_json(stage, "Sent", payload)
+    log_json(msg_type, "Sent", payload)
 
 
 def run_client(
@@ -239,11 +240,11 @@ def run_client(
     cookie = generate_cookie()
 
     with socket.create_connection((host, port), timeout=connect_timeout) as control_sock:
-        notify("control", f"Established control connection to {host}:{port}")
+        log_message("control", f"Established control connection to {host}:{port}")
         control_sock.settimeout(control_timeout)
 
         control_sock.sendall(cookie)
-        notify("control", "Sent cookie")
+        log_message("control", "Sent cookie")
 
         receive_state(control_sock, State.PARAM_EXCHANGE, "control")
 
@@ -261,16 +262,16 @@ def run_client(
         receive_state(control_sock, State.CREATE_STREAMS, "control")
 
         with socket.create_connection((host, port), timeout=connect_timeout) as data_sock:
-            notify("data", f"Established data connection with {host}:{port}")
+            log_message("data", f"Established data connection with {host}:{port}")
             data_sock.settimeout(data_timeout)
 
             data_sock.sendall(cookie)
-            notify("data", "Sent cookie")
+            log_message("data", "Sent cookie")
 
             receive_state(control_sock, State.TEST_START, "control")
             receive_state(control_sock, State.TEST_RUNNING, "control")
 
-            notify("data", f"Sending data for {duration}s...")
+            log_message("data", f"Sending data for {duration}s...")
 
             data_payload = secrets.token_bytes(BUF_SIZE)
 
@@ -289,7 +290,7 @@ def run_client(
                     break
 
                 if curr_time >= next_notif_time:
-                    notify_test(bytes_sent, time_passed, duration)
+                    log_data_progress(bytes_sent, time_passed, duration)
                     next_notif_time += print_interval
 
                 data_sock.settimeout(time_rem)
@@ -299,10 +300,10 @@ def run_client(
                 except TimeoutError:
                     break
 
-            notify_test(bytes_sent, time_passed, duration)
-
             time_elapsed = time.monotonic() - start_time
             usage_end = resource.getrusage(resource.RUSAGE_SELF)
+
+            log_data_progress(bytes_sent, time_passed, duration)
 
             send_state(control_sock, State.TEST_END, "control")
             receive_state(control_sock, State.EXCHANGE_RESULTS, "control")
