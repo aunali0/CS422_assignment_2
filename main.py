@@ -10,7 +10,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-BUF_SIZE: int = 131072
+BUF_SIZE = 131072
 
 Stage = Literal["control", "data", "test"]
 
@@ -57,14 +57,14 @@ def to_int(value: str) -> int:
     try:
         return int(value)
     except ValueError:
-        raise argparse.ArgumentTypeError("must be an integer")
+        raise argparse.ArgumentTypeError("must be an integer") from None
 
 
 def to_float(value: str) -> float:
     try:
         return float(value)
     except ValueError:
-        raise argparse.ArgumentTypeError("must be a float")
+        raise argparse.ArgumentTypeError("must be a float") from None
 
 
 def port_type(value: str) -> int:
@@ -96,14 +96,14 @@ def create_parser() -> argparse.ArgumentParser:
 
     run = commands.add_parser(
         "run",
-        help="Run a TCP client that connects to an iPERF3 server",
+        help="Run a TCP client that communicates with an iPERF3 server",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
-    dest = run.add_argument_group("destination")
-    dest.add_argument("--host", required=True, help="Server hostname or IP address")
-    dest.add_argument("--port", type=port_type, default=5201, help="Server TCP port")
-
+    server = run.add_argument_group("server")
+    server.add_argument("--host", required=True, help="Server hostname or IP address")
+    server.add_argument("--port", type=port_type, default=5201, help="Server TCP port")
+    
     experiment = run.add_argument_group("experiment")
     experiment.add_argument(
         "--duration",
@@ -117,7 +117,7 @@ def create_parser() -> argparse.ArgumentParser:
         type=positive_float_type,
         default=1.0,
         metavar="SECONDS",
-        help="How often, in seconds, experiment progress is printed",
+        help="How often experiment progress is printed",
     )
 
     timeouts = run.add_argument_group("timeouts")
@@ -126,21 +126,21 @@ def create_parser() -> argparse.ArgumentParser:
         type=positive_int_type,
         default=5,
         metavar="SECONDS",
-        help="Timeout in seconds for establishing connection with server",
+        help="Timeout for establishing connection with server",
     )
     timeouts.add_argument(
         "--control-timeout",
         type=positive_int_type,
         default=5,
         metavar="SECONDS",
-        help="Timeout in seconds for exchanging control packets with server",
+        help="Timeout for sending control packets to server",
     )
     timeouts.add_argument(
         "--data-timeout",
         type=positive_int_type,
         default=5,
         metavar="SECONDS",
-        help="Timeout in seconds for uploading data packets to server",
+        help="Timeout for sending data packets to server",
     )
 
     return parser
@@ -309,10 +309,10 @@ def run_client(
                 except TimeoutError:
                     break
 
+            notify_test(bytes_sent, time_passed, duration)
+
             time_elapsed = time.monotonic() - start_time
             usage_end = resource.getrusage(resource.RUSAGE_SELF)
-
-            notify_test(bytes_sent, duration, duration)
 
             send_state(control_sock, State.TEST_END, "control")
             receive_state(control_sock, State.EXCHANGE_RESULTS, "control")
