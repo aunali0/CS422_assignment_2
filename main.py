@@ -113,7 +113,7 @@ def create_parser() -> argparse.ArgumentParser:
         help="Experiment duration in seconds",
     )
     experiment.add_argument(
-        "--interval",
+        "--print-interval",
         type=positive_float_type,
         default=1.0,
         metavar="SECONDS",
@@ -241,7 +241,7 @@ def run_client(
     host: str,
     port: int,
     duration: int,
-    interval: float,
+    print_interval: float,
     connect_timeout: int,
     control_timeout: int,
     data_timeout: int,
@@ -288,7 +288,7 @@ def run_client(
             usage_start = resource.getrusage(resource.RUSAGE_SELF)
             bytes_sent = 0
 
-            next_notif_time = start_time + interval
+            next_notif_time = start_time + print_interval
 
             while True:
                 curr_time = time.monotonic()
@@ -300,7 +300,7 @@ def run_client(
 
                 if curr_time >= next_notif_time:
                     notify_test(bytes_sent, time_passed, duration)
-                    next_notif_time += interval
+                    next_notif_time += print_interval
 
                 data_sock.settimeout(time_rem)
 
@@ -357,7 +357,7 @@ def main() -> None:
             args.host,
             args.port,
             args.duration,
-            args.interval,
+            args.print_interval,
             args.connect_timeout,
             args.control_timeout,
             args.data_timeout,
