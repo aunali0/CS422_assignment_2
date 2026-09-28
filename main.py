@@ -1,5 +1,6 @@
 import argparse
 import json
+import resource
 import secrets
 import socket
 import time
@@ -7,10 +8,12 @@ from enum import IntEnum
 from string import ascii_lowercase
 from typing import Literal
 
-Stage = Literal["connect", "control", "data", "test"]
+from pydantic import BaseModel, ConfigDict, Field
 
 BUF_SIZE: int = 131072
-NOTIF_INTERVAL_SEC: float = 0.5
+
+Stage = Literal["control", "data", "test"]
+
 
 class State(IntEnum):
     SERVER_ERROR = -2
@@ -28,11 +31,40 @@ class State(IntEnum):
     IPERF_DONE = 16
 
 
+class StreamResult(BaseModel):
+    model_config = ConfigDict(strict=True, allow_inf_nan=False)
+
+    id: Literal[1]
+    bytes: int = Field(ge=0)
+    retransmits: int
+    jitter: float = Field(ge=0)
+    errors: int = Field(ge=0)
+    packets: int = Field(ge=0)
+
+
+class TestResult(BaseModel):
+    model_config = ConfigDict(strict=True, allow_inf_nan=False)
+
+    cpu_util_total: float = Field(ge=0)
+    cpu_util_user: float = Field(ge=0)
+    cpu_util_system: float = Field(ge=0)
+    sender_has_retransmits: int
+
+    streams: list[StreamResult] = Field(min_length=1, max_length=1)
+
+
 def to_int(value: str) -> int:
     try:
         return int(value)
     except ValueError:
         raise argparse.ArgumentTypeError("must be an integer")
+
+
+def to_float(value: str) -> float:
+    try:
+        return float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError("must be a float")
 
 
 def port_type(value: str) -> int:
@@ -44,13 +76,18 @@ def port_type(value: str) -> int:
     return port
 
 
-def positive_int_type(value: str) -> int:
-    num = to_int(value)
-
+def check_positive[T: (int, float)](num: T) -> T:
     if num <= 0:
         raise argparse.ArgumentTypeError("must be positive")
-
     return num
+
+
+def positive_int_type(value: str) -> int:
+    return check_positive(to_int(value))
+
+
+def positive_float_type(value: str) -> float:
+    return check_positive(to_float(value))
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -71,9 +108,16 @@ def create_parser() -> argparse.ArgumentParser:
     experiment.add_argument(
         "--duration",
         type=positive_int_type,
-        default=5,
+        default=10,
         metavar="SECONDS",
         help="Experiment duration in seconds",
+    )
+    experiment.add_argument(
+        "--interval",
+        type=positive_float_type,
+        default=1.0,
+        metavar="SECONDS",
+        help="How often, in seconds, experiment progress is printed",
     )
 
     timeouts = run.add_argument_group("timeouts")
@@ -102,8 +146,25 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def generate_cookie() -> bytes:
+    cookie = "".join(secrets.choice(ascii_lowercase) for _ in range(36))
+    return cookie.encode("ascii") + b"\x00"
+
+
 def notify(stage: Stage, msg: str) -> None:
     print(f"{f'[{stage}]':<9} {msg}", flush=True)
+
+
+def notify_json(stage: Stage, action: Literal["Sent", "Received"], payload: object) -> None:
+    notify(stage, f"{action} JSON:")
+    json_fmt = json.dumps(payload, indent=2, ensure_ascii=False)
+
+    for line in json_fmt.splitlines():
+        print(f"{'':9} {line}", flush=True)
+
+
+def notify_test(bytes_sent: int, time_passed: float, duration: int) -> None:
+    notify("test", f"{time_passed:.1f}s / {duration}s | {bytes_sent / (1024 * 1024):.2f} MiB sent")
 
 
 def format_state(value: int) -> str:
@@ -115,50 +176,72 @@ def format_state(value: int) -> str:
     return f"{name} ({value:#04x})"
 
 
-def generate_cookie() -> bytes:
-    cookie = "".join(secrets.choice(ascii_lowercase) for _ in range(36))
-    return cookie.encode("ascii") + b"\x00"
-
-
-def get_servername(sock: socket.socket) -> str:
-    host, port, *_ = sock.getpeername()
-    return f"{host}:{port}"
-
-
 def receive_state(sock: socket.socket, expected: int, stage: Stage) -> None:
+    exp_fmt = format_state(expected)
     msg = sock.recv(1)
 
     if not msg:
-        raise ConnectionError("Connection terminated unexpectedly")
+        raise ConnectionError(f"Connection terminated unexpectedly: expected {exp_fmt}")
 
     actual = int.from_bytes(msg)
+    actual_fmt = format_state(actual)
 
     if actual != expected:
-        raise ConnectionError(f"Received {format_state(actual)}, expected {format_state(expected)}")
+        raise ConnectionError(f"Received {actual_fmt}: expected {exp_fmt}")
 
-    notify(stage, f"Received {format_state(actual)}")
+    notify(stage, f"Received {actual_fmt}")
 
 
-def send_byte(sock: socket.socket, b: int, stage: Stage) -> None:
+def receive_count(sock: socket.socket, count: int) -> bytes:
+    data = bytearray()
+
+    while len(data) < count:
+        chunk = sock.recv(count - len(data))
+
+        if not chunk:
+            raise ConnectionError(
+                f"Connection closed unexpectedly: received {len(data)}/{count} bytes"
+            )
+
+        data.extend(chunk)
+
+    return bytes(data)
+
+
+def receive_json[T: BaseModel](sock: socket.socket, model: type[T], stage: Stage) -> T:
+    length = int.from_bytes(receive_count(sock, 4))
+    payload_bytes = receive_count(sock, length)
+    notify_json(stage, "Received", json.loads(payload_bytes))
+    return model.model_validate_json(payload_bytes)
+
+
+def send_state(sock: socket.socket, b: int, stage: Stage) -> None:
     sock.sendall(int.to_bytes(b))
     notify(stage, f"Sent {format_state(b)}")
 
 
 def send_json(sock: socket.socket, payload: dict[str, object], stage: Stage) -> None:
     payload_bytes = json.dumps(payload, separators=(",", ":"), allow_nan=False).encode("utf-8")
-    payload_len = len(payload_bytes)
-    sock.sendall(payload_len.to_bytes(4) + payload_bytes)
-    notify(stage, f"Sent JSON ({payload_len} bytes)")
+    len_bytes = len(payload_bytes).to_bytes(4)
+    sock.sendall(len_bytes + payload_bytes)
+    notify_json(stage, "Sent", payload)
 
 
-def notify_data_interval(bytes_sent: int, time_passed: float, duration: int) -> None:
-    notify("data", f"{time_passed:.1f}s / {duration}s | {bytes_sent / (1024 * 1024):.2f} MiB sent")
+def check_closed_connection(sock: socket.socket, timeout: float, stage: Stage) -> None:
+    sock.settimeout(timeout)
+    msg = sock.recv(1)
+
+    if msg:
+        raise ConnectionError(f"Expected connection closure, received 0x{msg.hex()}")
+
+    notify(stage, "Server closed connection")
 
 
 def run_client(
     host: str,
     port: int,
     duration: int,
+    interval: float,
     connect_timeout: int,
     control_timeout: int,
     data_timeout: int,
@@ -166,7 +249,7 @@ def run_client(
     cookie = generate_cookie()
 
     with socket.create_connection((host, port), timeout=connect_timeout) as control_sock:
-        notify("connect", f"Established control connection to {host}:{port}")
+        notify("control", f"Established control connection to {host}:{port}")
         control_sock.settimeout(control_timeout)
 
         control_sock.sendall(cookie)
@@ -187,8 +270,6 @@ def run_client(
 
         receive_state(control_sock, State.CREATE_STREAMS, "control")
 
-        bytes_sent = 0
-
         with socket.create_connection((host, port), timeout=connect_timeout) as data_sock:
             notify("data", f"Established data connection with {host}:{port}")
             data_sock.settimeout(data_timeout)
@@ -204,7 +285,10 @@ def run_client(
             data_payload = secrets.token_bytes(BUF_SIZE)
 
             start_time = time.monotonic()
-            next_notif_time = start_time + NOTIF_INTERVAL_SEC
+            usage_start = resource.getrusage(resource.RUSAGE_SELF)
+            bytes_sent = 0
+
+            next_notif_time = start_time + interval
 
             while True:
                 curr_time = time.monotonic()
@@ -215,8 +299,8 @@ def run_client(
                     break
 
                 if curr_time >= next_notif_time:
-                    notify_data_interval(bytes_sent, time_passed, duration)
-                    next_notif_time += NOTIF_INTERVAL_SEC
+                    notify_test(bytes_sent, time_passed, duration)
+                    next_notif_time += interval
 
                 data_sock.settimeout(time_rem)
 
@@ -225,15 +309,44 @@ def run_client(
                 except TimeoutError:
                     break
 
-        notify_data_interval(bytes_sent, duration, duration)
+            time_elapsed = time.monotonic() - start_time
+            usage_end = resource.getrusage(resource.RUSAGE_SELF)
 
-        send_byte(control_sock, State.TEST_END, "control")
-        receive_state(control_sock, State.EXCHANGE_RESULTS, "control")
+            notify_test(bytes_sent, duration, duration)
 
-        # TODO: Implement final sequence where client and server exchange statistics
+            send_state(control_sock, State.TEST_END, "control")
+            receive_state(control_sock, State.EXCHANGE_RESULTS, "control")
 
-        tcp_upload_payload: dict[str, object] = {"bytes": bytes_sent}
-        send_json(control_sock, tcp_upload_payload, "control")
+        user_time = usage_end.ru_utime - usage_start.ru_utime
+        sys_time = usage_end.ru_stime - usage_start.ru_stime
+
+        cpu_util_user = user_time / time_elapsed * 100
+        cpu_util_sys = sys_time / time_elapsed * 100
+        cpu_util_total = cpu_util_user + cpu_util_sys
+
+        client_results: dict[str, object] = {
+            "cpu_util_total": cpu_util_total,
+            "cpu_util_user": cpu_util_user,
+            "cpu_util_system": cpu_util_sys,
+            "sender_has_retransmits": 0,
+            "streams": [
+                {
+                    "id": 1,
+                    "bytes": bytes_sent,
+                    "retransmits": -1,
+                    "jitter": 0,
+                    "errors": 0,
+                    "packets": 0,
+                    "start_time": 0,
+                    "end_time": time_elapsed,
+                }
+            ],
+        }
+        send_json(control_sock, client_results, "control")
+        receive_json(control_sock, TestResult, "control")
+
+        receive_state(control_sock, State.DISPLAY_RESULTS, "control")
+        send_state(control_sock, State.IPERF_DONE, "control")
 
 
 def main() -> None:
@@ -244,6 +357,7 @@ def main() -> None:
             args.host,
             args.port,
             args.duration,
+            args.interval,
             args.connect_timeout,
             args.control_timeout,
             args.data_timeout,
