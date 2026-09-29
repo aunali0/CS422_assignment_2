@@ -4,7 +4,9 @@ import resource
 import secrets
 import socket
 import time
+from dataclasses import dataclass
 from enum import IntEnum
+from pathlib import Path
 from string import ascii_lowercase
 from typing import Literal
 
@@ -32,7 +34,7 @@ class State(IntEnum):
     IPERF_DONE = 16
 
 
-class StreamResult(BaseModel):
+class IPerf3Stream(BaseModel):
     model_config = ConfigDict(strict=True, allow_inf_nan=False)
 
     id: Literal[1]
@@ -43,7 +45,7 @@ class StreamResult(BaseModel):
     packets: int = Field(ge=0)
 
 
-class TestResult(BaseModel):
+class IPerf3Test(BaseModel):
     model_config = ConfigDict(strict=True, allow_inf_nan=False)
 
     cpu_util_total: float = Field(ge=0)
@@ -51,7 +53,12 @@ class TestResult(BaseModel):
     cpu_util_system: float = Field(ge=0)
     sender_has_retransmits: int
 
-    streams: list[StreamResult] = Field(min_length=1, max_length=1)
+    streams: list[IPerf3Stream] = Field(min_length=1, max_length=1)
+
+
+@dataclass
+class ClientRunResult:
+    pass
 
 
 def to_int(value: str) -> int:
@@ -91,58 +98,86 @@ def positive_float_type(value: str) -> float:
     return check_positive(to_float(value))
 
 
-def create_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="CLI for CS422 Assignment 2")
-    commands = parser.add_subparsers(dest="command", required=True)
-
-    run = commands.add_parser(
-        "run",
-        help="Run a TCP client that communicates with an iPERF3 server",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+def add_test_args(parser: argparse.ArgumentParser) -> None:
+    settings = parser.add_argument_group("settings")
+    settings.add_argument(
+        "-t", "--time", type=positive_int_type, default=10, metavar="SECONDS", help="Test duration"
     )
-
-    server = run.add_argument_group("server")
-    server.add_argument("--host", required=True, help="Server hostname or IP address")
-    server.add_argument("--port", type=port_type, default=5201, help="Server TCP port")
-
-    experiment = run.add_argument_group("experiment")
-    experiment.add_argument(
-        "--duration",
-        type=positive_int_type,
-        default=10,
-        metavar="SECONDS",
-        help="Experiment duration in seconds",
-    )
-    experiment.add_argument(
+    settings.add_argument(
+        "-i",
         "--print-interval",
         type=positive_float_type,
         default=1.0,
         metavar="SECONDS",
-        help="How often experiment progress is printed",
+        help="How often test progress is printed",
     )
 
-    timeouts = run.add_argument_group("timeouts")
+    timeouts = parser.add_argument_group("timeouts")
     timeouts.add_argument(
         "--connect-timeout",
-        type=positive_int_type,
-        default=5,
+        type=positive_float_type,
+        default=5.0,
         metavar="SECONDS",
         help="Timeout for establishing connection with server",
     )
     timeouts.add_argument(
         "--control-timeout",
-        type=positive_int_type,
-        default=5,
+        type=positive_float_type,
+        default=5.0,
         metavar="SECONDS",
         help="Timeout for sending control packets to server",
     )
     timeouts.add_argument(
         "--data-timeout",
-        type=positive_int_type,
-        default=5,
+        type=positive_float_type,
+        default=5.0,
         metavar="SECONDS",
         help="Timeout for sending data packets to server",
     )
+
+
+def create_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="CLI for CS422 Assignment 2")
+    commands = parser.add_subparsers(dest="command", required=True)
+
+    test = commands.add_parser(
+        "test",
+        help="Run a TCP upload test against an iPerf3 server",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+
+    server = test.add_argument_group("server")
+    server.add_argument("-s", "--host", required=True, help="Server hostname or IP address")
+    server.add_argument("-p", "--port", type=port_type, default=5201, help="Server TCP port")
+
+    add_test_args(test)
+
+    destinations = commands.add_parser(
+        "destinations",
+        help="Run a TCP upload test against multiple, randomly-selected iPerf3 servers",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+
+    destinations.add_argument(
+        "-s",
+        "--servers",
+        type=Path,
+        default="iperf3-servers.csv",
+        metavar="CSV",
+        help="Path to CSV file containing iPerf3 servers",
+    )
+    destinations.add_argument(
+        "-c", "--count", type=positive_int_type, default=10, help="Number of servers"
+    )
+    destinations.add_argument(
+        "-a",
+        "--attempts",
+        type=positive_int_type,
+        default=3,
+        help="Number of replacement attempts when server rate-limits or rejects test",
+    )
+
+    add_test_args(destinations)
 
     return parser
 
@@ -165,7 +200,9 @@ def log_json(msg_type: LogMsgType, action: str, payload: object) -> None:
 
 
 def log_data_progress(bytes_sent: int, time_passed: float, duration: int) -> None:
-    log_message("data", f"{time_passed:.1f}s / {duration}s | {bytes_sent / (1024 * 1024):.2f} MiB sent")
+    log_message(
+        "data", f"{time_passed:.1f}s / {duration}s | {bytes_sent / (1024 * 1024):.2f} MiB sent"
+    )
 
 
 def format_state(value: int) -> str:
@@ -184,7 +221,7 @@ def receive_state(sock: socket.socket, expected: int, msg_type: LogMsgType) -> N
     if not msg:
         raise ConnectionError(f"Connection terminated unexpectedly: expected {exp_fmt}")
 
-    actual = int.from_bytes(msg)
+    actual = int.from_bytes(msg, signed=True)
     actual_fmt = format_state(actual)
 
     if actual != expected:
@@ -228,14 +265,14 @@ def send_json(sock: socket.socket, payload: dict[str, object], msg_type: LogMsgT
     log_json(msg_type, "Sent", payload)
 
 
-def run_client(
+def run_upload_test(
     host: str,
     port: int,
     duration: int,
     print_interval: float,
-    connect_timeout: int,
-    control_timeout: int,
-    data_timeout: int,
+    connect_timeout: float,
+    control_timeout: float,
+    data_timeout: float,
 ):
     cookie = generate_cookie()
 
@@ -303,7 +340,7 @@ def run_client(
             time_elapsed = time.monotonic() - start_time
             usage_end = resource.getrusage(resource.RUSAGE_SELF)
 
-            log_data_progress(bytes_sent, time_passed, duration)
+            log_data_progress(bytes_sent, time_elapsed, duration)
 
             send_state(control_sock, State.TEST_END, "control")
             receive_state(control_sock, State.EXCHANGE_RESULTS, "control")
@@ -315,7 +352,7 @@ def run_client(
         cpu_util_sys = sys_time / time_elapsed * 100
         cpu_util_total = cpu_util_user + cpu_util_sys
 
-        client_results: dict[str, object] = {
+        test_payload: dict[str, object] = {
             "cpu_util_total": cpu_util_total,
             "cpu_util_user": cpu_util_user,
             "cpu_util_system": cpu_util_sys,
@@ -333,8 +370,8 @@ def run_client(
                 }
             ],
         }
-        send_json(control_sock, client_results, "control")
-        receive_json(control_sock, TestResult, "control")
+        send_json(control_sock, test_payload, "control")
+        receive_json(control_sock, IPerf3Test, "control")
 
         receive_state(control_sock, State.DISPLAY_RESULTS, "control")
         send_state(control_sock, State.IPERF_DONE, "control")
@@ -343,16 +380,18 @@ def run_client(
 def main() -> None:
     args = create_parser().parse_args()
 
-    if args.command == "run":
-        run_client(
-            args.host,
-            args.port,
-            args.duration,
-            args.print_interval,
-            args.connect_timeout,
-            args.control_timeout,
-            args.data_timeout,
+    if args.command == "test":
+        run_upload_test(
+            host=args.host,
+            port=args.port,
+            duration=args.time,
+            print_interval=args.print_interval,
+            connect_timeout=args.connect_timeout,
+            control_timeout=args.control_timeout,
+            data_timeout=args.data_timeout,
         )
+    elif args.command == "destinations":
+        raise NotImplementedError("'destinations' command is not implemented yet")
 
 
 if __name__ == "__main__":
