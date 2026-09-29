@@ -162,7 +162,7 @@ def create_parser() -> argparse.ArgumentParser:
         "-s",
         "--servers",
         type=Path,
-        default="iperf3-servers.csv",
+        required=True,
         metavar="CSV",
         help="Path to CSV file containing iPerf3 servers",
     )
@@ -265,7 +265,7 @@ def send_json(sock: socket.socket, payload: dict[str, object], msg_type: LogMsgT
     log_json(msg_type, "Sent", payload)
 
 
-def run_upload_test(
+def run_test(
     host: str,
     port: int,
     duration: int,
@@ -380,11 +380,22 @@ def run_upload_test(
         send_state(control_sock, State.IPERF_DONE, "control")
 
 
+def run_tests_with_destinations(
+    servers_file: Path,
+    duration: int,
+    print_interval: float,
+    connect_timeout: float,
+    control_timeout: float,
+    data_timeout: float,
+) -> None:
+    pass
+
+
 def main() -> None:
     args = create_parser().parse_args()
 
     if args.command == "test":
-        run_upload_test(
+        run_test(
             host=args.host,
             port=args.port,
             duration=args.time,
@@ -394,7 +405,14 @@ def main() -> None:
             data_timeout=args.data_timeout,
         )
     elif args.command == "destinations":
-        raise NotImplementedError("'destinations' command is not implemented yet")
+        run_tests_with_destinations(
+            servers_file=args.servers,
+            duration=args.time,
+            print_interval=args.print_interval,
+            connect_timeout=args.connect_timeout,
+            control_timeout=args.control_timeout,
+            data_timeout=args.data_timeout,
+        )
 
 
 if __name__ == "__main__":
