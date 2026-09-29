@@ -15,7 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field
 BUF_SIZE = 131072
 LOG_PREFIX_WIDTH = 9
 
-LogMsgType = Literal["control", "data"]
+LogMsgType = Literal["control", "data", "test"]
 
 
 class State(IntEnum):
@@ -123,16 +123,16 @@ def add_test_args(parser: argparse.ArgumentParser) -> None:
     timeouts.add_argument(
         "--control-timeout",
         type=positive_float_type,
-        default=5.0,
+        default=3.0,
         metavar="SECONDS",
-        help="Timeout for sending control packets to server",
+        help="Timeout for communicating over control socket",
     )
     timeouts.add_argument(
         "--data-timeout",
         type=positive_float_type,
-        default=5.0,
+        default=3.0,
         metavar="SECONDS",
-        help="Timeout for sending data packets to server",
+        help="Timeout for communicating over data socket",
     )
 
 
@@ -199,9 +199,9 @@ def log_json(msg_type: LogMsgType, action: str, payload: object) -> None:
         print(f"{'':{LOG_PREFIX_WIDTH}} {line}")
 
 
-def log_data_progress(bytes_sent: int, time_passed: float, duration: int) -> None:
+def log_test_progress(bytes_sent: int, time_passed: float, duration: int) -> None:
     log_message(
-        "data", f"{time_passed:.1f}s / {duration}s | {bytes_sent / (1024 * 1024):.2f} MiB sent"
+        "test", f"{time_passed:.1f}s / {duration}s | {bytes_sent / (1024 * 1024):.2f} MiB sent"
     )
 
 
@@ -273,7 +273,7 @@ def run_upload_test(
     connect_timeout: float,
     control_timeout: float,
     data_timeout: float,
-):
+) -> None:
     cookie = generate_cookie()
 
     with socket.create_connection((host, port), timeout=connect_timeout) as control_sock:
@@ -308,11 +308,13 @@ def run_upload_test(
             receive_state(control_sock, State.TEST_START, "control")
             receive_state(control_sock, State.TEST_RUNNING, "control")
 
-            log_message("data", f"Sending data for {duration}s...")
+            log_message("test", f"Running upload test for {duration}s...")
 
             data_payload = secrets.token_bytes(BUF_SIZE)
 
             start_time = time.monotonic()
+            end_time = start_time + duration
+
             usage_start = resource.getrusage(resource.RUSAGE_SELF)
             bytes_sent = 0
 
@@ -320,27 +322,28 @@ def run_upload_test(
 
             while True:
                 curr_time = time.monotonic()
-                time_passed = curr_time - start_time
-                time_rem = duration - time_passed
+                time_rem = end_time - curr_time
 
                 if time_rem <= 0:
                     break
 
                 if curr_time >= next_notif_time:
-                    log_data_progress(bytes_sent, time_passed, duration)
+                    log_test_progress(bytes_sent, curr_time - start_time, duration)
                     next_notif_time += print_interval
 
-                data_sock.settimeout(time_rem)
+                data_sock.settimeout(min(data_timeout, time_rem))
 
                 try:
                     bytes_sent += data_sock.send(data_payload)
                 except TimeoutError:
+                    if time.monotonic() < end_time:
+                        raise
                     break
 
             time_elapsed = time.monotonic() - start_time
             usage_end = resource.getrusage(resource.RUSAGE_SELF)
 
-            log_data_progress(bytes_sent, time_elapsed, duration)
+            log_test_progress(bytes_sent, time_elapsed, duration)
 
             send_state(control_sock, State.TEST_END, "control")
             receive_state(control_sock, State.EXCHANGE_RESULTS, "control")
