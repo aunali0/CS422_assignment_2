@@ -41,25 +41,19 @@ def run_destinations(servers: list[Server], count: int, attempts: int, cfg: Clie
 
         while server_idx < len(shuffled_servers):
             server = shuffled_servers[server_idx]
-            name = server.endpoint()
+            attempt_label = f"Server {i}/{count} | attempt {curr_attempt}/{attempts}"
 
             if try_run_test(server.host, server.port, cfg, quiet=True):
-                log_message("destinations", f"Server #{i}: successful test for {name}")
+                log_message("destinations", f"{attempt_label} | passed: {server.endpoint()}")
                 dest_servers.append(server)
 
                 break
 
             if curr_attempt == attempts:
-                log_message(
-                    "destinations",
-                    f"Server #{i}: failed test for {name} on final attempt {attempts}/{attempts}",
-                )
+                log_message("destinations", f"{attempt_label} | failed; limit reached")
                 break
 
-            log_message(
-                "destinations",
-                f"Server #{i}: failed test for {name} on attempt {curr_attempt}/{attempts}",
-            )
+            log_message("destinations", f"{attempt_label} | failed; trying next server")
 
             curr_attempt += 1
             server_idx += 1
@@ -70,4 +64,4 @@ def run_destinations(servers: list[Server], count: int, attempts: int, cfg: Clie
         server_idx += 1
 
     if len(dest_servers) < count:
-        log_message("destinations", f"Found {len(dest_servers)} out of {count} requested servers")
+        log_message("destinations", f"Selected {len(dest_servers)}/{count} servers")

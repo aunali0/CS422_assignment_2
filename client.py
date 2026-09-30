@@ -35,7 +35,7 @@ def run_test(host: str, port: int, cfg: ClientConfig) -> None:
     cookie = generate_cookie()
 
     with socket.create_connection((host, port), timeout=cfg.connect_timeout) as control_sock:
-        log_message("control", f"Established control connection to {host}:{port}")
+        log_message("control", f"Connected to {host}:{port}")
         control_sock.settimeout(cfg.control_timeout)
 
         control_sock.sendall(cookie)
@@ -57,7 +57,7 @@ def run_test(host: str, port: int, cfg: ClientConfig) -> None:
         receive_state(control_sock, State.CREATE_STREAMS, "control")
 
         with socket.create_connection((host, port), timeout=cfg.connect_timeout) as data_sock:
-            log_message("data", f"Established data connection with {host}:{port}")
+            log_message("data", "Connected")
             data_sock.settimeout(cfg.data_timeout)
 
             data_sock.sendall(cookie)
@@ -66,7 +66,7 @@ def run_test(host: str, port: int, cfg: ClientConfig) -> None:
             receive_state(control_sock, State.TEST_START, "control")
             receive_state(control_sock, State.TEST_RUNNING, "control")
 
-            log_message("test", f"Running upload test for {cfg.duration}s...")
+            log_message("test", f"Uploading for {cfg.duration}s")
 
             data_payload = secrets.token_bytes(BUF_SIZE)
 

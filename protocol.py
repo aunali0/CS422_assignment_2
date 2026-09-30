@@ -59,15 +59,15 @@ def receive_state(sock: socket.socket, expected: int, msg_type: LogLevel) -> Non
     msg = sock.recv(1)
 
     if not msg:
-        raise ConnectionError(f"Connection terminated unexpectedly: expected {exp_fmt}")
+        raise ConnectionError(f"Connection closed while waiting for {exp_fmt}")
 
     actual = int.from_bytes(msg, signed=True)
     actual_fmt = format_state(actual)
 
     if actual != expected:
-        raise ConnectionError(f"Received {actual_fmt}, expected {exp_fmt}")
+        raise ConnectionError(f"Unexpected state: {actual_fmt}; expected {exp_fmt}")
 
-    log_message(msg_type, f"Received {actual_fmt}")
+    log_message(msg_type, f"Received state {actual_fmt}")
 
 
 def receive_bytes(sock: socket.socket, count: int) -> bytes:
@@ -78,7 +78,7 @@ def receive_bytes(sock: socket.socket, count: int) -> bytes:
 
         if not chunk:
             raise ConnectionError(
-                f"Connection closed unexpectedly: received {len(data)}/{count} bytes"
+                f"Connection closed; received {len(data)}/{count} bytes"
             )
 
         data.extend(chunk)
@@ -95,7 +95,7 @@ def receive_json[T: BaseModel](sock: socket.socket, model: type[T], msg_type: Lo
 
 def send_state(sock: socket.socket, b: int, msg_type: LogLevel) -> None:
     sock.sendall(int.to_bytes(b))
-    log_message(msg_type, f"Sent {format_state(b)}")
+    log_message(msg_type, f"Sent state {format_state(b)}")
 
 
 def send_json(sock: socket.socket, payload: dict[str, object], msg_type: LogLevel) -> None:
