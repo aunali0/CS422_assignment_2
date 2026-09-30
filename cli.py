@@ -39,13 +39,12 @@ def positive_float_type(value: str) -> float:
     return check_positive(to_float(value))
 
 
-def add_test_args(parser: argparse.ArgumentParser) -> None:
-    settings = parser.add_argument_group("settings")
-    settings.add_argument(
+def add_client_args(parser: argparse.ArgumentParser) -> None:
+    client = parser.add_argument_group("client")
+    client.add_argument(
         "-t", "--time", type=positive_int_type, default=10, metavar="SECONDS", help="Test duration"
     )
-
-    settings.add_argument(
+    client.add_argument(
         "-i",
         "--print-interval",
         type=positive_float_type,
@@ -53,23 +52,21 @@ def add_test_args(parser: argparse.ArgumentParser) -> None:
         metavar="SECONDS",
         help="How often test progress is printed",
     )
-
-    timeouts = parser.add_argument_group("timeouts")
-    timeouts.add_argument(
+    client.add_argument(
         "--connect-timeout",
         type=positive_float_type,
         default=5.0,
         metavar="SECONDS",
         help="Timeout for establishing connection with server",
     )
-    timeouts.add_argument(
+    client.add_argument(
         "--control-timeout",
         type=positive_float_type,
         default=3.0,
         metavar="SECONDS",
         help="Timeout for communicating over control socket",
     )
-    timeouts.add_argument(
+    client.add_argument(
         "--data-timeout",
         type=positive_float_type,
         default=3.0,
@@ -92,14 +89,13 @@ def create_parser() -> argparse.ArgumentParser:
     server.add_argument("-s", "--host", required=True, help="Server hostname or IP address")
     server.add_argument("-p", "--port", type=port_type, default=5201, help="Server TCP port")
 
-    add_test_args(test)
+    add_client_args(test)
 
     destinations = commands.add_parser(
         "destinations",
         help="Run a TCP upload test against multiple, randomly-selected iPerf3 servers",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-
     destinations.add_argument(
         "-s",
         "--servers",
@@ -119,6 +115,6 @@ def create_parser() -> argparse.ArgumentParser:
         help="Number of replacement attempts when server rate-limits or rejects test",
     )
 
-    add_test_args(destinations)
+    add_client_args(destinations)
 
     return parser
