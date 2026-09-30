@@ -2,7 +2,10 @@ import resource
 import secrets
 import socket
 import time
+from contextlib import nullcontext
 from dataclasses import dataclass
+from json import JSONDecodeError
+
 
 from protocol import (
     IPerf3Test,
@@ -13,7 +16,8 @@ from protocol import (
     send_json,
     send_state,
 )
-from reporting import log_message, log_test_progress
+from log_utils import log_message, log_test_progress, suppress_logging
+from pydantic import ValidationError
 
 BUF_SIZE = 131072
 
@@ -132,3 +136,15 @@ def run_test(host: str, port: int, cfg: ClientConfig) -> None:
 
         receive_state(control_sock, State.DISPLAY_RESULTS, "control")
         send_state(control_sock, State.IPERF_DONE, "control")
+
+
+def try_run_test(host: str, port: int, cfg: ClientConfig, quiet: bool = False) -> bool:
+    try:
+        with suppress_logging() if quiet else nullcontext():
+            run_test(host, port, cfg)
+
+    except (OSError, JSONDecodeError, UnicodeDecodeError, ValidationError) as err:
+        log_message("error", f"{host}:{port} | {type(err).__name__}: {err}")
+        return False
+
+    return True

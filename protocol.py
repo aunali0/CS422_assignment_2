@@ -8,7 +8,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from reporting import LogMsgType, log_json, log_message
+from log_utils import LogLevel, log_json, log_message
 
 
 class State(IntEnum):
@@ -54,7 +54,7 @@ def generate_cookie() -> bytes:
     return cookie.encode("ascii") + b"\x00"
 
 
-def receive_state(sock: socket.socket, expected: int, msg_type: LogMsgType) -> None:
+def receive_state(sock: socket.socket, expected: int, msg_type: LogLevel) -> None:
     exp_fmt = format_state(expected)
     msg = sock.recv(1)
 
@@ -65,7 +65,7 @@ def receive_state(sock: socket.socket, expected: int, msg_type: LogMsgType) -> N
     actual_fmt = format_state(actual)
 
     if actual != expected:
-        raise ConnectionError(f"Received {actual_fmt}: expected {exp_fmt}")
+        raise ConnectionError(f"Received {actual_fmt}, expected {exp_fmt}")
 
     log_message(msg_type, f"Received {actual_fmt}")
 
@@ -86,26 +86,20 @@ def receive_bytes(sock: socket.socket, count: int) -> bytes:
     return bytes(data)
 
 
-def receive_json[T: BaseModel](
-    sock: socket.socket, model: type[T], msg_type: LogMsgType
-) -> T:
+def receive_json[T: BaseModel](sock: socket.socket, model: type[T], msg_type: LogLevel) -> T:
     length = int.from_bytes(receive_bytes(sock, 4))
     payload_bytes = receive_bytes(sock, length)
     log_json(msg_type, "Received", json.loads(payload_bytes))
     return model.model_validate_json(payload_bytes)
 
 
-def send_state(sock: socket.socket, b: int, msg_type: LogMsgType) -> None:
+def send_state(sock: socket.socket, b: int, msg_type: LogLevel) -> None:
     sock.sendall(int.to_bytes(b))
     log_message(msg_type, f"Sent {format_state(b)}")
 
 
-def send_json(
-    sock: socket.socket, payload: dict[str, object], msg_type: LogMsgType
-) -> None:
-    payload_bytes = json.dumps(payload, separators=(",", ":"), allow_nan=False).encode(
-        "utf-8"
-    )
+def send_json(sock: socket.socket, payload: dict[str, object], msg_type: LogLevel) -> None:
+    payload_bytes = json.dumps(payload, separators=(",", ":"), allow_nan=False).encode("utf-8")
     len_bytes = len(payload_bytes).to_bytes(4)
     sock.sendall(len_bytes + payload_bytes)
     log_json(msg_type, "Sent", payload)

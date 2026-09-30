@@ -1,19 +1,19 @@
 import csv
 import random
 from dataclasses import dataclass
-from json import JSONDecodeError
 from pathlib import Path
 
-from pydantic import ValidationError
-
-from client import run_test, ClientConfig
-from reporting import log_message
+from client import ClientConfig, try_run_test
+from log_utils import log_message
 
 
 @dataclass
 class Server:
     host: str
     port: int
+
+    def endpoint(self) -> str:
+        return f"{self.host}:{self.port}"
 
 
 def load_servers(filepath: Path) -> list[Server]:
@@ -34,27 +34,40 @@ def run_destinations(servers: list[Server], count: int, attempts: int, cfg: Clie
     random.shuffle(shuffled_servers)
 
     dest_servers = []
+    server_idx = 0
 
-    success_count = 0
-    attempts_pending = 0
+    for i in range(1, count + 1):
+        curr_attempt = 1
 
-    for server in shuffled_servers:
-        try:
-            run_test(server.host, server.port, cfg)
-        except (OSError, JSONDecodeError, UnicodeDecodeError, ValidationError) as err:
-            log_message("error", f"{server.host}:{server.port} | {type(err).__name__}: {err}")
+        while server_idx < len(shuffled_servers):
+            server = shuffled_servers[server_idx]
+            name = server.endpoint()
 
-            if attempts_pending == attempts:
-                return
+            if try_run_test(server.host, server.port, cfg, quiet=True):
+                log_message("destinations", f"Server #{i}: successful test for {name}")
+                dest_servers.append(server)
 
-            attempts_pending += 1
-            continue
+                break
 
-        dest_servers.append(server)
-        print(server)
+            if curr_attempt == attempts:
+                log_message(
+                    "destinations",
+                    f"Server #{i}: failed test for {name} on final attempt {attempts}/{attempts}",
+                )
+                break
 
-        attempts_pending = 0
-        success_count += 1
+            log_message(
+                "destinations",
+                f"Server #{i}: failed test for {name} on attempt {curr_attempt}/{attempts}",
+            )
 
-        if success_count == count:
+            curr_attempt += 1
+            server_idx += 1
+
+        if server_idx == len(shuffled_servers):
             break
+
+        server_idx += 1
+
+    if len(dest_servers) < count:
+        log_message("destinations", f"Found {len(dest_servers)} out of {count} requested servers")

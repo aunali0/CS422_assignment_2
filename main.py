@@ -1,11 +1,14 @@
+import logging
+
 from cli import create_parser
-from client import run_test, ClientConfig
+from client import ClientConfig, try_run_test
 
 from destinations import load_servers, run_destinations
 
 
 def main() -> None:
     args = create_parser().parse_args()
+    logging.basicConfig(level=logging.DEBUG, format="%(message)s")
 
     client_config = ClientConfig(
         duration=args.time,
@@ -16,7 +19,8 @@ def main() -> None:
     )
 
     if args.command == "test":
-        run_test(args.host, args.port, client_config)
+        if not try_run_test(args.host, args.port, client_config):
+            raise SystemExit(1)
 
     elif args.command == "destinations":
         run_destinations(load_servers(args.servers), args.count, args.attempts, client_config)
