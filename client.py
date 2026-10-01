@@ -6,7 +6,9 @@ from contextlib import nullcontext
 from dataclasses import dataclass
 from json import JSONDecodeError
 
+from pydantic import ValidationError
 
+from log_utils import log_message, log_test_progress, suppress_logging
 from protocol import (
     IPerf3Test,
     State,
@@ -16,8 +18,6 @@ from protocol import (
     send_json,
     send_state,
 )
-from log_utils import log_message, log_test_progress, suppress_logging
-from pydantic import ValidationError
 
 BUF_SIZE = 131072
 

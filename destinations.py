@@ -36,12 +36,12 @@ def run_destinations(servers: list[Server], count: int, attempts: int, cfg: Clie
     dest_servers = []
     server_idx = 0
 
-    for i in range(1, count + 1):
+    for i in range(count):
         curr_attempt = 1
 
         while server_idx < len(shuffled_servers):
             server = shuffled_servers[server_idx]
-            attempt_label = f"Server {i}/{count} | attempt {curr_attempt}/{attempts}"
+            attempt_label = f"Server {i + 1}/{count} | attempt {curr_attempt}/{attempts}"
 
             if try_run_test(server.host, server.port, cfg, quiet=True):
                 log_message("destinations", f"{attempt_label} | passed: {server.endpoint()}")
@@ -63,5 +63,10 @@ def run_destinations(servers: list[Server], count: int, attempts: int, cfg: Clie
 
         server_idx += 1
 
-    if len(dest_servers) < count:
-        log_message("destinations", f"Selected {len(dest_servers)}/{count} servers")
+    log_message("destinations", f"Selected {len(dest_servers)}/{count} servers")
+
+    # TODO: Finish run_destinations command
+    # - Update run_test to return a dataclass containing info/stats about the test
+    # - Update run_test function and CLI to accept goodput interval argument
+    # - Update run_test to return this goodput info
+    # - Generate relevant plots/tables as directed in part 1c in this function

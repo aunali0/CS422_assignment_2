@@ -5,7 +5,6 @@ from enum import IntEnum
 from string import ascii_lowercase
 from typing import Literal
 
-
 from pydantic import BaseModel, ConfigDict, Field
 
 from log_utils import LogLevel, log_json, log_message
@@ -77,9 +76,7 @@ def receive_bytes(sock: socket.socket, count: int) -> bytes:
         chunk = sock.recv(count - len(data))
 
         if not chunk:
-            raise ConnectionError(
-                f"Connection closed; received {len(data)}/{count} bytes"
-            )
+            raise ConnectionError(f"Connection closed; received {len(data)}/{count} bytes")
 
         data.extend(chunk)
 

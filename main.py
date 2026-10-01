@@ -2,7 +2,6 @@ import logging
 
 from cli import create_parser
 from client import ClientConfig, try_run_test
-
 from destinations import load_servers, run_destinations
 
 
