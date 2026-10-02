@@ -12,6 +12,7 @@ def main() -> None:
     client_config = ClientConfig(
         duration=args.time,
         print_interval=args.print_interval,
+        goodput_interval=args.goodput_interval,
         connect_timeout=args.connect_timeout,
         control_timeout=args.control_timeout,
         data_timeout=args.data_timeout,

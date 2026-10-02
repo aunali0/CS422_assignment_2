@@ -3,6 +3,7 @@ name = "cs422-assignment-2"
 version = "0.1.0"
 requires-python = ">=3.14.7"
 dependencies = [
+    "matplotlib>=3.11.2",
     "pydantic>=2.13.5",
 ]
 

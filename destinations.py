@@ -3,7 +3,12 @@ import random
 from dataclasses import dataclass
 from pathlib import Path
 
-from client import ClientConfig, try_run_test
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+from client import ClientConfig, TestResult, try_run_test
 from log_utils import log_message
 
 
@@ -32,9 +37,9 @@ def load_servers(filepath: Path) -> list[Server]:
 def run_destinations(servers: list[Server], count: int, attempts: int, cfg: ClientConfig) -> None:
     shuffled_servers = servers.copy()
     random.shuffle(shuffled_servers)
-
-    dest_servers = []
     server_idx = 0
+
+    tested_servers: list[tuple[Server, TestResult]] = []
 
     for i in range(count):
         curr_attempt = 1
@@ -42,10 +47,11 @@ def run_destinations(servers: list[Server], count: int, attempts: int, cfg: Clie
         while server_idx < len(shuffled_servers):
             server = shuffled_servers[server_idx]
             attempt_label = f"Server {i + 1}/{count} | attempt {curr_attempt}/{attempts}"
+            test_result = try_run_test(server.host, server.port, cfg, quiet=True)
 
-            if try_run_test(server.host, server.port, cfg, quiet=True):
+            if test_result is not None:
                 log_message("destinations", f"{attempt_label} | passed: {server.endpoint()}")
-                dest_servers.append(server)
+                tested_servers.append((server, test_result))
 
                 break
 
@@ -63,10 +69,31 @@ def run_destinations(servers: list[Server], count: int, attempts: int, cfg: Clie
 
         server_idx += 1
 
-    log_message("destinations", f"Selected {len(dest_servers)}/{count} servers")
+    num_dest = len(tested_servers)
+    log_message("destinations", f"Selected {num_dest}/{count} servers")
 
-    # TODO: Finish run_destinations command
-    # - Update run_test to return a dataclass containing info/stats about the test
-    # - Update run_test function and CLI to accept goodput interval argument
-    # - Update run_test to return this goodput info
-    # - Generate relevant plots/tables as directed in part 1c in this function
+    fig, ax = plt.subplots(1, 1, figsize=(11, 6), layout="constrained")
+
+    for server, test_result in tested_servers:
+        x, y = zip(*test_result.goodput, strict=True)
+        label = f"{server.endpoint()} ({test_result.algorithm})"
+        ax.plot(x, y, label=label, linewidth=1.5)
+
+    ax.set_title("Throughput Per Destination", fontsize=14)
+    ax.set_xlabel("Time (s)", fontsize=12)
+    ax.set_ylabel("Throughput (Mbit/s)", fontsize=12)
+
+    ax.set_xlim(left=0)
+    ax.set_ylim(bottom=0)
+    ax.tick_params(axis="both", labelsize=10)
+
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    ax.grid(axis="y", linestyle="--", alpha=0.25, linewidth=0.7)
+    ax.set_axisbelow(True)
+
+    fig.legend(loc="outside lower center", ncols=2, fontsize=10)
+
+    fig.savefig("destinations.pdf", format="pdf", bbox_inches="tight")
+    log_message("destinations", "Plot saved to destinations.pdf")

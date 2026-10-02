@@ -6,6 +6,7 @@ from typing import Literal
 
 LogLevel = Literal["control", "data", "test", "error", "destinations"]
 logger = logging.getLogger(__name__)
+logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
 LOG_LEVELS: dict[LogLevel, int] = {
     "control": logging.DEBUG,
@@ -43,5 +44,5 @@ def log_json(level: LogLevel, action: str, payload: object) -> None:
 
 def log_test_progress(bytes_sent: int, time_passed: float, duration: int) -> None:
     log_message(
-        "test", f"{time_passed:.1f}s / {duration}s | {bytes_sent / (1024 * 1024):.2f} MiB sent"
+        "test", f"{time_passed:.1f}s / {duration}s | {bytes_sent / (1024 * 1024):.1f} MiB sent"
     )

@@ -42,15 +42,23 @@ def positive_float_type(value: str) -> float:
 def add_client_args(parser: argparse.ArgumentParser) -> None:
     client = parser.add_argument_group("client")
     client.add_argument(
-        "-t", "--time", type=positive_int_type, default=10, metavar="SECONDS", help="Test duration"
+        "-t", "--time", type=positive_int_type, default=60, metavar="SECONDS", help="Test duration"
     )
     client.add_argument(
         "-i",
         "--print-interval",
         type=positive_float_type,
-        default=1.0,
+        default=5.0,
         metavar="SECONDS",
         help="How often test progress is printed",
+    )
+    client.add_argument(
+        "-g",
+        "--goodput-interval",
+        type=positive_float_type,
+        default=0.5,
+        metavar="SECONDS",
+        help="How often goodput is measured during test",
     )
     client.add_argument(
         "--connect-timeout",
@@ -105,7 +113,7 @@ def create_parser() -> argparse.ArgumentParser:
         help="Path to CSV file containing iPerf3 servers",
     )
     destinations.add_argument(
-        "-c", "--count", type=positive_int_type, default=10, help="Number of servers"
+        "-c", "--count", type=positive_int_type, default=5, help="Number of servers"
     )
     destinations.add_argument(
         "-a",
@@ -114,7 +122,6 @@ def create_parser() -> argparse.ArgumentParser:
         default=3,
         help="Number of replacement attempts when server rate-limits or rejects test",
     )
-
     add_client_args(destinations)
 
     return parser
