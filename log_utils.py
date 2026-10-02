@@ -6,7 +6,6 @@ from typing import Literal
 
 LogLevel = Literal["control", "data", "test", "error", "destinations"]
 logger = logging.getLogger(__name__)
-logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
 LOG_LEVELS: dict[LogLevel, int] = {
     "control": logging.DEBUG,

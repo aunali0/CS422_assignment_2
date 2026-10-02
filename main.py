@@ -6,8 +6,10 @@ from destinations import load_servers, run_destinations
 
 
 def main() -> None:
-    args = create_parser().parse_args()
     logging.basicConfig(level=logging.DEBUG, format="%(message)s")
+    logging.getLogger("matplotlib").setLevel(logging.WARNING)
+
+    args = create_parser().parse_args()
 
     client_config = ClientConfig(
         duration=args.time,
@@ -19,7 +21,7 @@ def main() -> None:
     )
 
     if args.command == "test":
-        if not try_run_test(args.host, args.port, client_config):
+        if try_run_test(args.host, args.port, client_config) is None:
             raise SystemExit(1)
 
     elif args.command == "destinations":
