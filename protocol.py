@@ -53,7 +53,7 @@ def generate_cookie() -> bytes:
     return cookie.encode("ascii") + b"\x00"
 
 
-def receive_state(sock: socket.socket, expected: int, msg_type: LogLevel) -> None:
+def receive_state(sock: socket.socket, expected: int, level: LogLevel) -> None:
     exp_fmt = format_state(expected)
     msg = sock.recv(1)
 
@@ -66,7 +66,7 @@ def receive_state(sock: socket.socket, expected: int, msg_type: LogLevel) -> Non
     if actual != expected:
         raise ConnectionError(f"Unexpected state: {actual_fmt}; expected {exp_fmt}")
 
-    log_message(msg_type, f"Received state {actual_fmt}")
+    log_message(level, f"Received state {actual_fmt}")
 
 
 def receive_bytes(sock: socket.socket, count: int) -> bytes:
@@ -83,23 +83,23 @@ def receive_bytes(sock: socket.socket, count: int) -> bytes:
     return bytes(data)
 
 
-def receive_json[T: BaseModel](sock: socket.socket, model: type[T], msg_type: LogLevel) -> T:
+def receive_json[T: BaseModel](sock: socket.socket, model: type[T], level: LogLevel) -> T:
     length = int.from_bytes(receive_bytes(sock, 4))
     payload_bytes = receive_bytes(sock, length)
-    log_json(msg_type, "Received", json.loads(payload_bytes))
+    log_json(level, "Received", json.loads(payload_bytes))
     return model.model_validate_json(payload_bytes)
 
 
-def send_state(sock: socket.socket, b: int, msg_type: LogLevel) -> None:
+def send_state(sock: socket.socket, b: int, level: LogLevel) -> None:
     sock.sendall(int.to_bytes(b))
-    log_message(msg_type, f"Sent state {format_state(b)}")
+    log_message(level, f"Sent state {format_state(b)}")
 
 
-def send_json(sock: socket.socket, payload: dict[str, object], msg_type: LogLevel) -> None:
+def send_json(sock: socket.socket, payload: dict[str, object], level: LogLevel) -> None:
     payload_bytes = json.dumps(payload, separators=(",", ":"), allow_nan=False).encode("utf-8")
     len_bytes = len(payload_bytes).to_bytes(4)
     sock.sendall(len_bytes + payload_bytes)
-    log_json(msg_type, "Sent", payload)
+    log_json(level, "Sent", payload)
 
 
 def format_state(value: int) -> str:
