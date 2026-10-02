@@ -10,7 +10,7 @@ from typing import NamedTuple
 
 from pydantic import ValidationError
 
-from log_utils import log_message, log_test_progress, suppress_logging
+from log_utils import log_message, suppress_logging
 from protocol import (
     IPerf3Test,
     State,
@@ -38,8 +38,6 @@ class ClientConfig:
 
 
 class GoodputSample(NamedTuple):
-    """Elapsed time in seconds and acknowledged throughput in Mbit/s."""
-
     time: float
     value: float
 
@@ -104,7 +102,7 @@ def run_test(host: str, port: int, cfg: ClientConfig) -> TestResult:
             end_time = start_time + cfg.duration
 
             usage_start = resource.getrusage(resource.RUSAGE_SELF)
-            bytes_sent = 0
+            total_bytes_sent = 0
 
             next_print_time = start_time + cfg.print_interval
             next_goodput_time = start_time + cfg.goodput_interval
@@ -126,6 +124,10 @@ def run_test(host: str, port: int, cfg: ClientConfig) -> TestResult:
                 prev_bytes_ack = bytes_ack
                 prev_goodput_time = sample_time
 
+            def log_test_progress(time_passed: float) -> None:
+                sent = total_bytes_sent / (1024 * 1024)
+                log_message("test", f"{time_passed:.1f}s / {cfg.duration}s | {sent:.1f} MiB sent")
+
             while True:
                 curr_time = time.monotonic()
                 time_rem = end_time - curr_time
@@ -142,7 +144,7 @@ def run_test(host: str, port: int, cfg: ClientConfig) -> TestResult:
                     next_goodput_time = curr_time + cfg.goodput_interval
 
                 if curr_time >= next_print_time:
-                    log_test_progress(bytes_sent, time_elapsed, cfg.duration)
+                    log_test_progress(time_elapsed)
                     next_print_time = curr_time + cfg.print_interval
 
                 deadline = min(next_goodput_time, next_print_time, end_time, data_deadline)
@@ -154,21 +156,21 @@ def run_test(host: str, port: int, cfg: ClientConfig) -> TestResult:
                 data_sock.settimeout(data_timeout)
 
                 try:
-                    sent = data_sock.send(test_payload)
+                    bytes_sent = data_sock.send(test_payload)
                 except TimeoutError:
                     continue
 
-                if sent == 0:
+                if bytes_sent == 0:
                     raise ConnectionError("Data connection closed during test")
 
-                bytes_sent += sent
+                total_bytes_sent += bytes_sent
                 data_deadline = time.monotonic() + cfg.data_timeout
 
             curr_time = time.monotonic()
-            sample_goodput(curr_time)
-
             time_elapsed = curr_time - start_time
-            log_test_progress(bytes_sent, time_elapsed, cfg.duration)
+
+            sample_goodput(curr_time)
+            log_test_progress(time_elapsed)
 
             usage_end = resource.getrusage(resource.RUSAGE_SELF)
 
@@ -190,7 +192,7 @@ def run_test(host: str, port: int, cfg: ClientConfig) -> TestResult:
             "streams": [
                 {
                     "id": 1,
-                    "bytes": bytes_sent,
+                    "bytes": total_bytes_sent,
                     "retransmits": -1,
                     "jitter": 0,
                     "errors": 0,

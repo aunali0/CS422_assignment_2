@@ -39,9 +39,3 @@ def log_json(level: LogLevel, action: str, payload: object) -> None:
     indent = " " * len(f"[{level}] ")
     indented_json = "\n".join(f"{indent}{line}" for line in payload_str.splitlines())
     log_message(level, f"{action} JSON:\n{indented_json}")
-
-
-def log_test_progress(bytes_sent: int, time_passed: float, duration: int) -> None:
-    log_message(
-        "test", f"{time_passed:.1f}s / {duration}s | {bytes_sent / (1024 * 1024):.1f} MiB sent"
-    )
