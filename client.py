@@ -21,10 +21,12 @@ from protocol import (
     send_state,
 )
 
-BUF_SIZE = 131072
+BUF_SIZE = 128 * 1024
 
 BYTES_ACK_OFFSET = 120
-TCP_INFO_SIZE = BYTES_ACK_OFFSET + 8
+BYTES_ACK_FORMAT = "=Q"
+TCP_INFO_SIZE = BYTES_ACK_OFFSET + struct.calcsize(BYTES_ACK_FORMAT)
+TCP_CONGESTION_NAME_SIZE = 16
 
 
 @dataclass(frozen=True)
@@ -44,17 +46,19 @@ class GoodputSample(NamedTuple):
 
 @dataclass
 class TestResult:
+    algorithm: str
     goodput: list[GoodputSample] = field(default_factory=list)
-    algorithm: str = "unknown"
 
 
 def get_bytes_ack(sock: socket.socket) -> int:
     tcp_info_bytes = sock.getsockopt(socket.IPPROTO_TCP, socket.TCP_INFO, TCP_INFO_SIZE)
-    return struct.unpack_from("=Q", tcp_info_bytes, BYTES_ACK_OFFSET)[0]
+    return struct.unpack_from(BYTES_ACK_FORMAT, tcp_info_bytes, BYTES_ACK_OFFSET)[0]
 
 
 def get_tcp_algorithm(sock: socket.socket) -> str:
-    tcp_alg_bytes = sock.getsockopt(socket.IPPROTO_TCP, socket.TCP_CONGESTION, 16)
+    tcp_alg_bytes = sock.getsockopt(
+        socket.IPPROTO_TCP, socket.TCP_CONGESTION, TCP_CONGESTION_NAME_SIZE
+    )
     return tcp_alg_bytes.split(b"\x00", 1)[0].decode("ascii")
 
 
@@ -98,6 +102,7 @@ def run_test(host: str, port: int, cfg: ClientConfig) -> TestResult:
             test_payload = secrets.token_bytes(BUF_SIZE)
             algorithm = get_tcp_algorithm(data_sock)
 
+            prev_bytes_ack = get_bytes_ack(data_sock)
             start_time = time.monotonic()
             end_time = start_time + cfg.duration
 
@@ -108,43 +113,43 @@ def run_test(host: str, port: int, cfg: ClientConfig) -> TestResult:
             next_goodput_time = start_time + cfg.goodput_interval
             data_deadline = start_time + cfg.data_timeout
 
-            prev_bytes_ack = get_bytes_ack(data_sock)
             prev_goodput_time = start_time
             goodputs: list[GoodputSample] = []
 
-            def sample_goodput(sample_time: float) -> None:
+            def sample_goodput() -> None:
                 nonlocal prev_bytes_ack, prev_goodput_time
 
                 bytes_ack = get_bytes_ack(data_sock)
+                sample_time = time.monotonic()
                 bytes_ack_delta = bytes_ack - prev_bytes_ack
                 time_delta = sample_time - prev_goodput_time
-                goodput = bytes_ack_delta / time_delta * 8 / 1_000_000
+                goodput = bytes_ack_delta / time_delta * 8 / 1e6
                 goodputs.append(GoodputSample(sample_time - start_time, goodput))
 
                 prev_bytes_ack = bytes_ack
                 prev_goodput_time = sample_time
 
             def log_test_progress(time_passed: float) -> None:
-                sent = total_bytes_sent / (1024 * 1024)
+                sent = total_bytes_sent / 1024**2
                 log_message("test", f"{time_passed:.1f}s / {cfg.duration}s | {sent:.1f} MiB sent")
 
             while True:
                 curr_time = time.monotonic()
-                time_rem = end_time - curr_time
-                time_elapsed = curr_time - start_time
 
-                if time_rem <= 0:
+                if curr_time >= end_time:
                     break
 
                 if curr_time >= data_deadline:
                     raise TimeoutError("Data socket timed out")
 
                 if curr_time >= next_goodput_time:
-                    sample_goodput(curr_time)
-                    next_goodput_time = curr_time + cfg.goodput_interval
+                    sample_goodput()
+
+                    intervals = int((prev_goodput_time - start_time) / cfg.goodput_interval) + 1
+                    next_goodput_time = start_time + intervals * cfg.goodput_interval
 
                 if curr_time >= next_print_time:
-                    log_test_progress(time_elapsed)
+                    log_test_progress(curr_time - start_time)
                     next_print_time = curr_time + cfg.print_interval
 
                 deadline = min(next_goodput_time, next_print_time, end_time, data_deadline)
@@ -166,10 +171,9 @@ def run_test(host: str, port: int, cfg: ClientConfig) -> TestResult:
                 total_bytes_sent += bytes_sent
                 data_deadline = time.monotonic() + cfg.data_timeout
 
-            curr_time = time.monotonic()
-            time_elapsed = curr_time - start_time
+            sample_goodput()
 
-            sample_goodput(curr_time)
+            time_elapsed = time.monotonic() - start_time
             log_test_progress(time_elapsed)
 
             usage_end = resource.getrusage(resource.RUSAGE_SELF)
@@ -208,7 +212,7 @@ def run_test(host: str, port: int, cfg: ClientConfig) -> TestResult:
         receive_state(control_sock, State.DISPLAY_RESULTS, "control")
         send_state(control_sock, State.IPERF_DONE, "control")
 
-        return TestResult(goodputs, algorithm)
+        return TestResult(goodput=goodputs, algorithm=algorithm)
 
 
 def try_run_test(host: str, port: int, cfg: ClientConfig, quiet: bool = False) -> TestResult | None:

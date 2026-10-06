@@ -1,13 +1,15 @@
 import json
 import secrets
 import socket
+import time
 from enum import IntEnum
 from string import ascii_lowercase
 from typing import Literal
 
+from log_utils import LogLevel, log_json, log_message
 from pydantic import BaseModel, ConfigDict, Field
 
-from log_utils import LogLevel, log_json, log_message
+MAX_JSON_BYTES = 1024 ** 2
 
 
 class State(IntEnum):
@@ -53,15 +55,15 @@ def generate_cookie() -> bytes:
     return cookie.encode("ascii") + b"\x00"
 
 
-def receive_state(sock: socket.socket, expected: int, level: LogLevel) -> None:
-    exp_fmt = format_state(expected)
+def receive_state(sock: socket.socket, expected: State, level: LogLevel) -> None:
+    exp_fmt = format_as_state(expected)
     msg = sock.recv(1)
 
     if not msg:
         raise ConnectionError(f"Connection closed while waiting for {exp_fmt}")
 
     actual = int.from_bytes(msg, signed=True)
-    actual_fmt = format_state(actual)
+    actual_fmt = format_as_state(actual)
 
     if actual != expected:
         raise ConnectionError(f"Unexpected state: {actual_fmt}; expected {exp_fmt}")
@@ -72,27 +74,47 @@ def receive_state(sock: socket.socket, expected: int, level: LogLevel) -> None:
 def receive_bytes(sock: socket.socket, count: int) -> bytes:
     data = bytearray()
 
-    while len(data) < count:
-        chunk = sock.recv(count - len(data))
+    timeout = sock.gettimeout()
+    deadline = time.monotonic() + timeout
 
-        if not chunk:
-            raise ConnectionError(f"Connection closed; received {len(data)}/{count} bytes")
+    try:
+        while len(data) < count:
+            rec_msg = f"received {len(data)}/{count} bytes"
+            remaining = deadline - time.monotonic()
 
-        data.extend(chunk)
+            if remaining <= 0:
+                raise TimeoutError(f"Timed out; {rec_msg}")
+
+            sock.settimeout(remaining)
+            chunk = sock.recv(count - len(data))
+
+            if not chunk:
+                raise ConnectionError(f"Connection closed; {rec_msg}")
+
+            data.extend(chunk)
+    finally:
+        sock.settimeout(timeout)
 
     return bytes(data)
 
 
 def receive_json[T: BaseModel](sock: socket.socket, model: type[T], level: LogLevel) -> T:
     length = int.from_bytes(receive_bytes(sock, 4))
+
+    if not 0 < length <= MAX_JSON_BYTES:
+        raise ConnectionError(
+            f"Invalid server byte count: {length}; expected 1 to {MAX_JSON_BYTES}"
+        )
+
     payload_bytes = receive_bytes(sock, length)
     log_json(level, "Received", json.loads(payload_bytes))
+
     return model.model_validate_json(payload_bytes)
 
 
 def send_state(sock: socket.socket, b: int, level: LogLevel) -> None:
-    sock.sendall(int.to_bytes(b))
-    log_message(level, f"Sent state {format_state(b)}")
+    sock.sendall(int.to_bytes(b, signed=True))
+    log_message(level, f"Sent state {format_as_state(b)}")
 
 
 def send_json(sock: socket.socket, payload: dict[str, object], level: LogLevel) -> None:
@@ -102,7 +124,7 @@ def send_json(sock: socket.socket, payload: dict[str, object], level: LogLevel) 
     log_json(level, "Sent", payload)
 
 
-def format_state(value: int) -> str:
+def format_as_state(value: int) -> str:
     try:
         name = State(value).name
     except ValueError:

@@ -1,4 +1,5 @@
 import argparse
+from math import isfinite
 from pathlib import Path
 
 
@@ -26,6 +27,8 @@ def port_type(value: str) -> int:
 
 
 def check_positive[T: (int, float)](num: T) -> T:
+    if isinstance(num, float) and not isfinite(num):
+        raise argparse.ArgumentTypeError("must be finite")
     if num <= 0:
         raise argparse.ArgumentTypeError("must be positive")
     return num
@@ -56,7 +59,7 @@ def add_client_args(parser: argparse.ArgumentParser) -> None:
         "-g",
         "--goodput-interval",
         type=positive_float_type,
-        default=0.5,
+        default=1,
         metavar="SECONDS",
         help="How often goodput is measured during test",
     )
@@ -113,14 +116,14 @@ def create_parser() -> argparse.ArgumentParser:
         help="Path to CSV file containing iPerf3 servers",
     )
     destinations.add_argument(
-        "-c", "--count", type=positive_int_type, default=5, help="Number of servers"
+        "-c", "--count", type=positive_int_type, default=10, help="Number of servers"
     )
     destinations.add_argument(
         "-a",
         "--attempts",
         type=positive_int_type,
         default=3,
-        help="Number of replacement attempts when server rate-limits or rejects test",
+        help="Maximum attempts per destination, including the first server",
     )
     add_client_args(destinations)
 
