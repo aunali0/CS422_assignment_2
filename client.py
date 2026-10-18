@@ -1,16 +1,15 @@
 import resource
 import secrets
 import socket
-import struct
 import time
 from contextlib import nullcontext
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from json import JSONDecodeError
-from typing import NamedTuple
 
 from pydantic import ValidationError
 
 from log_utils import log_message, suppress_logging
+from measurement import RunMetadata, Sample, current_metadata
 from protocol import (
     IPerf3Test,
     State,
@@ -20,13 +19,15 @@ from protocol import (
     send_json,
     send_state,
 )
+from tcp_info import (
+    field_delta,
+    get_tcp_algorithm,
+    get_tcp_info,
+    get_tcp_info_bytes,
+    parse_tcp_info,
+)
 
 BUF_SIZE = 128 * 1024
-
-BYTES_ACK_OFFSET = 120
-BYTES_ACK_FORMAT = "=Q"
-TCP_INFO_SIZE = BYTES_ACK_OFFSET + struct.calcsize(BYTES_ACK_FORMAT)
-TCP_CONGESTION_NAME_SIZE = 16
 
 
 @dataclass(frozen=True)
@@ -39,30 +40,14 @@ class ClientConfig:
     data_timeout: float
 
 
-class GoodputSample(NamedTuple):
-    time: float
-    value: float
-
-
 @dataclass
 class TestResult:
-    algorithm: str
-    goodput: list[GoodputSample] = field(default_factory=list)
+    metadata: RunMetadata
+    samples: list[Sample]
+    total_bytes_sent: int
 
 
-def get_bytes_ack(sock: socket.socket) -> int:
-    tcp_info_bytes = sock.getsockopt(socket.IPPROTO_TCP, socket.TCP_INFO, TCP_INFO_SIZE)
-    return struct.unpack_from(BYTES_ACK_FORMAT, tcp_info_bytes, BYTES_ACK_OFFSET)[0]
-
-
-def get_tcp_algorithm(sock: socket.socket) -> str:
-    tcp_alg_bytes = sock.getsockopt(
-        socket.IPPROTO_TCP, socket.TCP_CONGESTION, TCP_CONGESTION_NAME_SIZE
-    )
-    return tcp_alg_bytes.split(b"\x00", 1)[0].decode("ascii")
-
-
-def run_test(host: str, port: int, cfg: ClientConfig) -> TestResult:
+def run_test(host: str, port: int, cfg: ClientConfig, run_id: str) -> TestResult:
     cookie = generate_cookie()
 
     with socket.create_connection((host, port), timeout=cfg.connect_timeout) as control_sock:
@@ -100,9 +85,15 @@ def run_test(host: str, port: int, cfg: ClientConfig) -> TestResult:
             log_message("test", f"Uploading for {cfg.duration}s")
 
             test_payload = secrets.token_bytes(BUF_SIZE)
-            algorithm = get_tcp_algorithm(data_sock)
 
-            prev_bytes_ack = get_bytes_ack(data_sock)
+            algorithm = get_tcp_algorithm(data_sock)
+            info_bytes = get_tcp_info_bytes(data_sock)
+            metadata = current_metadata(
+                run_id, host, port, algorithm, cfg.duration, cfg.goodput_interval, len(info_bytes)
+            )
+            log_message("test", f"Algorithm {algorithm} | tcp_info {len(info_bytes)} bytes")
+
+            prev_info = parse_tcp_info(info_bytes)
             start_time = time.monotonic()
             end_time = start_time + cfg.duration
 
@@ -113,21 +104,34 @@ def run_test(host: str, port: int, cfg: ClientConfig) -> TestResult:
             next_goodput_time = start_time + cfg.goodput_interval
             data_deadline = start_time + cfg.data_timeout
 
-            prev_goodput_time = start_time
-            goodputs: list[GoodputSample] = []
+            prev_sample_time = start_time
+            samples: list[Sample] = []
 
-            def sample_goodput() -> None:
-                nonlocal prev_bytes_ack, prev_goodput_time
+            def take_sample() -> None:
+                nonlocal prev_info, prev_sample_time
 
-                bytes_ack = get_bytes_ack(data_sock)
+                info = get_tcp_info(data_sock)
                 sample_time = time.monotonic()
-                bytes_ack_delta = bytes_ack - prev_bytes_ack
-                time_delta = sample_time - prev_goodput_time
-                goodput = bytes_ack_delta / time_delta * 8 / 1e6
-                goodputs.append(GoodputSample(sample_time - start_time, goodput))
 
-                prev_bytes_ack = bytes_ack
-                prev_goodput_time = sample_time
+                interval = sample_time - prev_sample_time
+                bytes_acked_delta = field_delta(info, prev_info, "bytes_acked") or 0
+
+                samples.append(
+                    Sample(
+                        time=sample_time - start_time,
+                        interval=interval,
+                        goodput=bytes_acked_delta / interval * 8 / 1e6,
+                        bytes_acked_delta=bytes_acked_delta,
+                        retrans_delta=field_delta(info, prev_info, "total_retrans"),
+                        bytes_retrans_delta=field_delta(info, prev_info, "bytes_retrans"),
+                        data_segs_out_delta=field_delta(info, prev_info, "data_segs_out"),
+                        delivered_delta=field_delta(info, prev_info, "delivered"),
+                        info=info,
+                    )
+                )
+
+                prev_info = info
+                prev_sample_time = sample_time
 
             def log_test_progress(time_passed: float) -> None:
                 sent = total_bytes_sent / 1024**2
@@ -143,9 +147,9 @@ def run_test(host: str, port: int, cfg: ClientConfig) -> TestResult:
                     raise TimeoutError("Data socket timed out")
 
                 if curr_time >= next_goodput_time:
-                    sample_goodput()
+                    take_sample()
 
-                    intervals = int((prev_goodput_time - start_time) / cfg.goodput_interval) + 1
+                    intervals = int((prev_sample_time - start_time) / cfg.goodput_interval) + 1
                     next_goodput_time = start_time + intervals * cfg.goodput_interval
 
                 if curr_time >= next_print_time:
@@ -171,7 +175,7 @@ def run_test(host: str, port: int, cfg: ClientConfig) -> TestResult:
                 total_bytes_sent += bytes_sent
                 data_deadline = time.monotonic() + cfg.data_timeout
 
-            sample_goodput()
+            take_sample()
 
             time_elapsed = time.monotonic() - start_time
             log_test_progress(time_elapsed)
@@ -212,13 +216,15 @@ def run_test(host: str, port: int, cfg: ClientConfig) -> TestResult:
         receive_state(control_sock, State.DISPLAY_RESULTS, "control")
         send_state(control_sock, State.IPERF_DONE, "control")
 
-        return TestResult(goodput=goodputs, algorithm=algorithm)
+        return TestResult(metadata=metadata, samples=samples, total_bytes_sent=total_bytes_sent)
 
 
-def try_run_test(host: str, port: int, cfg: ClientConfig, quiet: bool = False) -> TestResult | None:
+def try_run_test(
+    host: str, port: int, cfg: ClientConfig, run_id: str, quiet: bool = False
+) -> TestResult | None:
     try:
         with suppress_logging() if quiet else nullcontext():
-            return run_test(host, port, cfg)
+            return run_test(host, port, cfg, run_id)
 
     except (OSError, JSONDecodeError, UnicodeDecodeError, ValidationError) as err:
         log_message("error", f"{host}:{port} | {type(err).__name__}: {err}")

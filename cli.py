@@ -85,6 +85,22 @@ def add_client_args(parser: argparse.ArgumentParser) -> None:
         help="Timeout for communicating over data socket",
     )
 
+    output = parser.add_argument_group("output")
+    output.add_argument(
+        "-o",
+        "--out-dir",
+        type=Path,
+        default=Path("results"),
+        metavar="DIR",
+        help="Directory for raw measurements and plots",
+    )
+    output.add_argument(
+        "--run-id",
+        default=None,
+        metavar="ID",
+        help="Run identifier recorded in the output (default: UTC timestamp)",
+    )
+
 
 def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="CLI for CS422 Assignment 2")
