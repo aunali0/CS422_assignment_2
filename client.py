@@ -1,4 +1,6 @@
 import resource
+from contextlib import contextmanager
+from collections.abc import Iterator
 import secrets
 import socket
 import time
@@ -38,6 +40,7 @@ class ClientConfig:
     connect_timeout: float
     control_timeout: float
     data_timeout: float
+    algorithm: str | None = None
 
 
 @dataclass
@@ -45,6 +48,30 @@ class TestResult:
     metadata: RunMetadata
     samples: list[Sample]
     total_bytes_sent: int
+
+
+@contextmanager
+def data_connection(host: str, port: int, cfg: ClientConfig) -> Iterator[socket.socket]:
+    addresses = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
+    last_error = None
+    for family, kind, proto, _, address in addresses:
+        sock = socket.socket(family, kind, proto)
+        try:
+            sock.settimeout(cfg.connect_timeout)
+            if cfg.algorithm:
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_CONGESTION, cfg.algorithm.encode())
+                actual = get_tcp_algorithm(sock)
+                if actual != cfg.algorithm:
+                    raise OSError(f"Requested {cfg.algorithm}, got {actual}")
+            sock.connect(address)
+        except OSError as error:
+            sock.close()
+            last_error = error
+            continue
+        with sock:
+            yield sock
+        return
+    raise last_error or OSError(f"No addresses for {host}")
 
 
 def run_test(host: str, port: int, cfg: ClientConfig, run_id: str) -> TestResult:
@@ -72,7 +99,7 @@ def run_test(host: str, port: int, cfg: ClientConfig, run_id: str) -> TestResult
 
         receive_state(control_sock, State.CREATE_STREAMS, "control")
 
-        with socket.create_connection((host, port), timeout=cfg.connect_timeout) as data_sock:
+        with data_connection(host, port, cfg) as data_sock:
             log_message("data", "Connected")
             data_sock.settimeout(cfg.data_timeout)
 

@@ -44,6 +44,7 @@ def positive_float_type(value: str) -> float:
 
 def add_client_args(parser: argparse.ArgumentParser) -> None:
     client = parser.add_argument_group("client")
+    client.add_argument("--algorithm", default=None, help="Data socket congestion control algorithm")
     client.add_argument(
         "-t", "--time", type=positive_int_type, default=60, metavar="SECONDS", help="Test duration"
     )
@@ -143,4 +144,18 @@ def create_parser() -> argparse.ArgumentParser:
     )
     add_client_args(destinations)
 
+    compare = commands.add_parser("compare", help="Repeat matched congestion control experiments")
+    compare.add_argument("-s", "--servers", type=Path, required=True)
+    compare.add_argument("-c", "--count", type=positive_int_type, default=10)
+    compare.add_argument("-a", "--attempts", type=positive_int_type, default=3,
+                         help="Maximum candidate destinations per requested destination")
+    compare.add_argument("-r", "--repetitions", type=positive_int_type, default=3)
+    compare.add_argument("--algorithms", nargs="+", default=["cubic", "reno", "bbr"])
+    compare.add_argument("--seed", type=int, default=422)
+    compare.add_argument("--pause", type=positive_float_type, default=2,
+                         help="Seconds between tests")
+    add_client_args(compare)
+
+    analyze = commands.add_parser("analyze", help="Rebuild comparison plots and report offline")
+    analyze.add_argument("--manifest", type=Path, required=True)
     return parser

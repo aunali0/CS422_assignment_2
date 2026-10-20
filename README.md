@@ -8,30 +8,34 @@ congestion window, RTT, and a loss proxy, then writes raw measurements and PDF p
 
 The iperf3 binary is never invoked; the client talks to standard public iperf3 servers.
 
+## Assignment 2 Q3
+
+See [Q3_RUN.md](Q3_RUN.md) for the CUBIC/Reno/BBR experiment and Docker commands,
+outputs, and submission steps. [Q3_DESIGN.md](Q3_DESIGN.md) contains the proposed
+algorithm and Assignment 3 handoff. The comparison has not been run on this Mac.
+
+```sh
+python main.py compare -s iperf3-servers.csv -c 10 -t 60 -g 1 -r 3 --run-id q3-final
+python main.py analyze --manifest results/q3-final/manifest.json
+```
+
 ## Requirements
 
 **This must run on Linux** — either a Linux machine or Windows with WSL2. It reads
 `getsockopt(TCP_INFO)` and imports the Unix-only `resource` module, so it cannot run on
 Windows directly (it fails at import, even for `--help`).
 
-You need [uv](https://docs.astral.sh/uv/). uv reads `pyproject.toml` / `uv.lock` and
-installs the right Python and all dependencies for you. If you don't have it:
+Use Python 3.12 or newer. Install the dependencies in a virtual environment:
 
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-source $HOME/.local/bin/env
-```
-
-## Setup
-
-```bash
+```sh
 cd /path/to/CS422_assignment_2
-uv sync
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r requirements.txt
 ```
 
-That's the whole setup. It installs Python (>= 3.14.7) plus matplotlib and pydantic into
-a local `.venv/`. Prefix every command below with `uv run` and the right environment is
-used automatically.
+With the environment activated, use `python` for the commands below. Alternatively,
+install uv and use `uv run`; it resolves dependencies from pyproject.toml.
 
 > On Windows, open your WSL shell first and work from the mounted path, e.g.
 > `cd /mnt/c/Users/<you>/Documents/CS422/CS422_assignment_2`.
@@ -41,7 +45,7 @@ used automatically.
 ### One server
 
 ```bash
-uv run python main.py test -s 185.180.12.40 -p 5201 -t 15 -g 0.5
+python main.py test -s 185.180.12.40 -p 5201 -t 15 -g 0.5
 ```
 
 Uploads to one iperf3 server for 15 seconds, sampling every 0.5 s. Good for a quick check
@@ -50,7 +54,7 @@ that everything works before committing to longer runs.
 ### Many servers (the main experiment)
 
 ```bash
-uv run python main.py destinations -s iperf3-servers.csv -c 10 -a 3 -t 60 -g 1
+python main.py destinations -s iperf3-servers.csv -c 10 -a 3 -t 60 -g 1
 ```
 
 Picks 10 random servers from `iperf3-servers.csv`, runs a 60 s test against each, and
@@ -62,10 +66,11 @@ the run continues with a replacement server.
 
 ## Options
 
-Both subcommands share these:
+The test, destinations, and compare subcommands share these:
 
 | Option | Default | Meaning |
 | --- | --- | --- |
+| `--algorithm NAME` | OS default | Select the data socket algorithm before connecting (test/destinations) |
 | `-t, --time SECONDS` | 60 | Transfer duration per destination |
 | `-g, --goodput-interval SECONDS` | 1 | Sampling interval for goodput and TCP stats |
 | `-i, --print-interval SECONDS` | 5 | How often progress is printed |
@@ -79,7 +84,7 @@ Both subcommands share these:
 `destinations` takes `-s, --servers` (CSV path, required), `-c, --count` (default 10),
 and `-a, --attempts` (default 3).
 
-Run `uv run python main.py test --help` for the full list.
+Run `python main.py test --help` for the full list.
 
 ## Output
 

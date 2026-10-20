@@ -14,6 +14,11 @@ def main() -> None:
 
     args = create_parser().parse_args()
 
+    if args.command == "analyze":
+        from comparison import analyze_manifest
+        analyze_manifest(args.manifest)
+        return
+
     run_id = args.run_id or datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
 
     client_config = ClientConfig(
@@ -23,9 +28,17 @@ def main() -> None:
         connect_timeout=args.connect_timeout,
         control_timeout=args.control_timeout,
         data_timeout=args.data_timeout,
+        algorithm=args.algorithm,
     )
 
-    if args.command == "test":
+    if args.command == "compare":
+        from comparison import run_comparison
+        if args.algorithm:
+            raise SystemExit("Use --algorithms with compare")
+        complete = run_comparison(args, client_config, run_id)
+        if not complete:
+            raise SystemExit(1)
+    elif args.command == "test":
         result = try_run_test(args.host, args.port, client_config, run_id)
 
         if result is None:
