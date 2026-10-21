@@ -2,7 +2,7 @@
 
 Implemented: algorithm selection before data-socket connect, repeated matched experiments, raw CSV/JSON, common-scale comparison plots, summary tables, a generated report, and algorithm pseudocode in Q3_DESIGN.md.
 
-The full comparison has now been run by a teammate on Linux/WSL2 and imported from res.zip. The checked dataset is results/q3-test: three destinations, three algorithms, three repetitions, 60 seconds per run, and one-second sampling. All 27 matched runs completed. See [Q3_RESULTS.md](Q3_RESULTS.md) for the handoff and [the five-page Q3 report](Q3_REPORT.pdf). Q3_REPORT.pdf is at the top of the repo and includes implementation links, the two required plot pages, analysis, and the algorithm design. The longer report is supporting material under results/q3-test/supporting/. Merge it with the team's Q1/Q2 report for the single assignment submission.
+The full comparison has now been run by a teammate on Linux/WSL2 and imported from res.zip. The checked dataset is results/q3-test: three destinations, three algorithms, three repetitions, 60 seconds per run, and one-second sampling. All 27 matched runs completed. See [the five-page Q3 report](Q3_REPORT.pdf) and [its editable text](Q3_REPORT.md). Q3_REPORT.pdf is at the top of the repo and includes implementation links, the two required plot pages, analysis, and the algorithm design. Merge it with the team's Q1/Q2 report for the single assignment submission.
 
 ## Run on Linux or WSL2
 

@@ -14,8 +14,8 @@ The iperf3 binary is never invoked; the client talks to standard public iperf3 s
 
 See [Q3_RUN.md](Q3_RUN.md) for the CUBIC/Reno/BBR experiment and Docker commands,
 outputs, and submission steps. [Q3_DESIGN.md](Q3_DESIGN.md) contains the proposed
-algorithm and Assignment 3 handoff. The completed comparison, checked measurements, and
-reviewed report are linked from [Q3_RESULTS.md](Q3_RESULTS.md).
+algorithm and Assignment 3 handoff. The completed measurements are in `results/q3-test/`; the reviewed report is
+[Q3_REPORT.pdf](Q3_REPORT.pdf).
 
 ```sh
 python main.py compare -s iperf3-servers.csv -c 10 -t 60 -g 1 -r 3 --run-id q3-final
