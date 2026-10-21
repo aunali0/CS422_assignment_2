@@ -1,0 +1,853 @@
+{
+  "run_id": "q3-test",
+  "environment": {
+    "kernel": "6.18.33.2-microsoft-standard-WSL2",
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+    "algorithms": {
+      "cubic": "cubic",
+      "reno": "reno",
+      "bbr": "bbr"
+    },
+    "python": "3.14.8",
+    "dependencies": {
+      "matplotlib": "3.11.2",
+      "pydantic": "2.13.5"
+    }
+  },
+  "config": {
+    "duration": 60,
+    "print_interval": 5.0,
+    "goodput_interval": 1.0,
+    "connect_timeout": 5.0,
+    "control_timeout": 3.0,
+    "data_timeout": 3.0,
+    "algorithm": null
+  },
+  "algorithms": [
+    "cubic",
+    "reno",
+    "bbr"
+  ],
+  "repetitions": 3,
+  "seed": 422,
+  "pause_s": 2,
+  "requested_destinations": 3,
+  "max_candidates": 9,
+  "candidates": [
+    {
+      "host": "dal.speedtest.clouvider.net",
+      "port": 5200
+    },
+    {
+      "host": "185.152.66.67",
+      "port": 5201
+    },
+    {
+      "host": "a110.speedtest.wobcom.de",
+      "port": 5201
+    },
+    {
+      "host": "speedtest.wdc2.us.leaseweb.net",
+      "port": 5201
+    },
+    {
+      "host": "nl.speed.vps1.net",
+      "port": 5201
+    },
+    {
+      "host": "speed.netfiber.net.il",
+      "port": 5201
+    },
+    {
+      "host": "iperf.pendc.com",
+      "port": 5201
+    },
+    {
+      "host": "96.45.41.167",
+      "port": 30001
+    },
+    {
+      "host": "speedtest.syd12.au.leaseweb.net",
+      "port": 5201
+    }
+  ],
+  "order_method": "seeded initial shuffle; rotate by repetition and candidate index",
+  "selected_destinations": [
+    "dal.speedtest.clouvider.net:5200",
+    "speed.netfiber.net.il:5201",
+    "96.45.41.167:30001"
+  ],
+  "representative": "dal.speedtest.clouvider.net:5200",
+  "tests": [
+    {
+      "destination": "dal.speedtest.clouvider.net:5200",
+      "repetition": 1,
+      "requested_algorithm": "bbr",
+      "status": "ok",
+      "run_id": "q3-test-d1-r1-bbr",
+      "started_at_unix_s": 1792469172.755238,
+      "finished_at_unix_s": 1792469233.1084936,
+      "csv": "q3-test-d1-r1-bbr_dal.speedtest.clouvider.net_5200.csv",
+      "actual_algorithm": "bbr"
+    },
+    {
+      "destination": "dal.speedtest.clouvider.net:5200",
+      "repetition": 1,
+      "requested_algorithm": "cubic",
+      "status": "ok",
+      "run_id": "q3-test-d1-r1-cubic",
+      "started_at_unix_s": 1792469235.1102087,
+      "finished_at_unix_s": 1792469295.5219417,
+      "csv": "q3-test-d1-r1-cubic_dal.speedtest.clouvider.net_5200.csv",
+      "actual_algorithm": "cubic"
+    },
+    {
+      "destination": "dal.speedtest.clouvider.net:5200",
+      "repetition": 1,
+      "requested_algorithm": "reno",
+      "status": "ok",
+      "run_id": "q3-test-d1-r1-reno",
+      "started_at_unix_s": 1792469297.5267384,
+      "finished_at_unix_s": 1792469357.9373238,
+      "csv": "q3-test-d1-r1-reno_dal.speedtest.clouvider.net_5200.csv",
+      "actual_algorithm": "reno"
+    },
+    {
+      "destination": "dal.speedtest.clouvider.net:5200",
+      "repetition": 2,
+      "requested_algorithm": "cubic",
+      "status": "ok",
+      "run_id": "q3-test-d1-r2-cubic",
+      "started_at_unix_s": 1792469359.940483,
+      "finished_at_unix_s": 1792469420.3331225,
+      "csv": "q3-test-d1-r2-cubic_dal.speedtest.clouvider.net_5200.csv",
+      "actual_algorithm": "cubic"
+    },
+    {
+      "destination": "dal.speedtest.clouvider.net:5200",
+      "repetition": 2,
+      "requested_algorithm": "reno",
+      "status": "ok",
+      "run_id": "q3-test-d1-r2-reno",
+      "started_at_unix_s": 1792469422.3365679,
+      "finished_at_unix_s": 1792469482.785671,
+      "csv": "q3-test-d1-r2-reno_dal.speedtest.clouvider.net_5200.csv",
+      "actual_algorithm": "reno"
+    },
+    {
+      "destination": "dal.speedtest.clouvider.net:5200",
+      "repetition": 2,
+      "requested_algorithm": "bbr",
+      "status": "ok",
+      "run_id": "q3-test-d1-r2-bbr",
+      "started_at_unix_s": 1792469484.7902465,
+      "finished_at_unix_s": 1792469545.1860673,
+      "csv": "q3-test-d1-r2-bbr_dal.speedtest.clouvider.net_5200.csv",
+      "actual_algorithm": "bbr"
+    },
+    {
+      "destination": "dal.speedtest.clouvider.net:5200",
+      "repetition": 3,
+      "requested_algorithm": "reno",
+      "status": "ok",
+      "run_id": "q3-test-d1-r3-reno",
+      "started_at_unix_s": 1792469547.1891575,
+      "finished_at_unix_s": 1792469607.6167202,
+      "csv": "q3-test-d1-r3-reno_dal.speedtest.clouvider.net_5200.csv",
+      "actual_algorithm": "reno"
+    },
+    {
+      "destination": "dal.speedtest.clouvider.net:5200",
+      "repetition": 3,
+      "requested_algorithm": "bbr",
+      "status": "ok",
+      "run_id": "q3-test-d1-r3-bbr",
+      "started_at_unix_s": 1792469609.6197567,
+      "finished_at_unix_s": 1792469670.025397,
+      "csv": "q3-test-d1-r3-bbr_dal.speedtest.clouvider.net_5200.csv",
+      "actual_algorithm": "bbr"
+    },
+    {
+      "destination": "dal.speedtest.clouvider.net:5200",
+      "repetition": 3,
+      "requested_algorithm": "cubic",
+      "status": "ok",
+      "run_id": "q3-test-d1-r3-cubic",
+      "started_at_unix_s": 1792469672.0268962,
+      "finished_at_unix_s": 1792469732.416733,
+      "csv": "q3-test-d1-r3-cubic_dal.speedtest.clouvider.net_5200.csv",
+      "actual_algorithm": "cubic"
+    },
+    {
+      "destination": "185.152.66.67:5201",
+      "repetition": 1,
+      "requested_algorithm": "cubic",
+      "status": "failed",
+      "run_id": "q3-test-d2-r1-cubic",
+      "started_at_unix_s": 1792469734.420221,
+      "finished_at_unix_s": 1792469734.4810948,
+      "reason": "See experiment.log"
+    },
+    {
+      "destination": "185.152.66.67:5201",
+      "repetition": 1,
+      "requested_algorithm": "reno",
+      "status": "failed",
+      "run_id": "q3-test-d2-r1-reno",
+      "started_at_unix_s": 1792469736.4816618,
+      "finished_at_unix_s": 1792469736.543072,
+      "reason": "See experiment.log"
+    },
+    {
+      "destination": "185.152.66.67:5201",
+      "repetition": 1,
+      "requested_algorithm": "bbr",
+      "status": "failed",
+      "run_id": "q3-test-d2-r1-bbr",
+      "started_at_unix_s": 1792469738.5435717,
+      "finished_at_unix_s": 1792469738.6049747,
+      "reason": "See experiment.log"
+    },
+    {
+      "destination": "185.152.66.67:5201",
+      "repetition": 2,
+      "requested_algorithm": "reno",
+      "status": "failed",
+      "run_id": "q3-test-d2-r2-reno",
+      "started_at_unix_s": 1792469740.6054003,
+      "finished_at_unix_s": 1792469740.6696014,
+      "reason": "See experiment.log"
+    },
+    {
+      "destination": "185.152.66.67:5201",
+      "repetition": 2,
+      "requested_algorithm": "bbr",
+      "status": "failed",
+      "run_id": "q3-test-d2-r2-bbr",
+      "started_at_unix_s": 1792469742.670004,
+      "finished_at_unix_s": 1792469742.7321396,
+      "reason": "See experiment.log"
+    },
+    {
+      "destination": "185.152.66.67:5201",
+      "repetition": 2,
+      "requested_algorithm": "cubic",
+      "status": "failed",
+      "run_id": "q3-test-d2-r2-cubic",
+      "started_at_unix_s": 1792469744.7325234,
+      "finished_at_unix_s": 1792469744.7931316,
+      "reason": "See experiment.log"
+    },
+    {
+      "destination": "185.152.66.67:5201",
+      "repetition": 3,
+      "requested_algorithm": "bbr",
+      "status": "failed",
+      "run_id": "q3-test-d2-r3-bbr",
+      "started_at_unix_s": 1792469746.7938786,
+      "finished_at_unix_s": 1792469746.8648129,
+      "reason": "See experiment.log"
+    },
+    {
+      "destination": "185.152.66.67:5201",
+      "repetition": 3,
+      "requested_algorithm": "cubic",
+      "status": "failed",
+      "run_id": "q3-test-d2-r3-cubic",
+      "started_at_unix_s": 1792469748.8651962,
+      "finished_at_unix_s": 1792469748.9268165,
+      "reason": "See experiment.log"
+    },
+    {
+      "destination": "185.152.66.67:5201",
+      "repetition": 3,
+      "requested_algorithm": "reno",
+      "status": "failed",
+      "run_id": "q3-test-d2-r3-reno",
+      "started_at_unix_s": 1792469750.9273648,
+      "finished_at_unix_s": 1792469750.9875667,
+      "reason": "See experiment.log"
+    },
+    {
+      "destination": "a110.speedtest.wobcom.de:5201",
+      "repetition": 1,
+      "requested_algorithm": "reno",
+      "status": "failed",
+      "run_id": "q3-test-d3-r1-reno",
+      "started_at_unix_s": 1792469752.9899027,
+      "finished_at_unix_s": 1792469756.8259556,
+      "reason": "See experiment.log"
+    },
+    {
+      "destination": "a110.speedtest.wobcom.de:5201",
+      "repetition": 1,
+      "requested_algorithm": "bbr",
+      "status": "failed",
+      "run_id": "q3-test-d3-r1-bbr",
+      "started_at_unix_s": 1792469758.8263762,
+      "finished_at_unix_s": 1792469799.6436136,
+      "reason": "See experiment.log"
+    },
+    {
+      "destination": "a110.speedtest.wobcom.de:5201",
+      "repetition": 1,
+      "requested_algorithm": "cubic",
+      "status": "failed",
+      "run_id": "q3-test-d3-r1-cubic",
+      "started_at_unix_s": 1792469801.644181,
+      "finished_at_unix_s": 1792469801.7848907,
+      "reason": "See experiment.log"
+    },
+    {
+      "destination": "a110.speedtest.wobcom.de:5201",
+      "repetition": 2,
+      "requested_algorithm": "bbr",
+      "status": "ok",
+      "run_id": "q3-test-d3-r2-bbr",
+      "started_at_unix_s": 1792469803.7854538,
+      "finished_at_unix_s": 1792469865.230751,
+      "csv": "q3-test-d3-r2-bbr_a110.speedtest.wobcom.de_5201.csv",
+      "actual_algorithm": "bbr"
+    },
+    {
+      "destination": "a110.speedtest.wobcom.de:5201",
+      "repetition": 2,
+      "requested_algorithm": "cubic",
+      "status": "ok",
+      "run_id": "q3-test-d3-r2-cubic",
+      "started_at_unix_s": 1792469867.2325776,
+      "finished_at_unix_s": 1792469928.1226842,
+      "csv": "q3-test-d3-r2-cubic_a110.speedtest.wobcom.de_5201.csv",
+      "actual_algorithm": "cubic"
+    },
+    {
+      "destination": "a110.speedtest.wobcom.de:5201",
+      "repetition": 2,
+      "requested_algorithm": "reno",
+      "status": "failed",
+      "run_id": "q3-test-d3-r2-reno",
+      "started_at_unix_s": 1792469930.1264346,
+      "finished_at_unix_s": 1792469930.3855226,
+      "reason": "See experiment.log"
+    },
+    {
+      "destination": "a110.speedtest.wobcom.de:5201",
+      "repetition": 3,
+      "requested_algorithm": "cubic",
+      "status": "failed",
+      "run_id": "q3-test-d3-r3-cubic",
+      "started_at_unix_s": 1792469932.385902,
+      "finished_at_unix_s": 1792469932.6546266,
+      "reason": "See experiment.log"
+    },
+    {
+      "destination": "a110.speedtest.wobcom.de:5201",
+      "repetition": 3,
+      "requested_algorithm": "reno",
+      "status": "failed",
+      "run_id": "q3-test-d3-r3-reno",
+      "started_at_unix_s": 1792469934.6552129,
+      "finished_at_unix_s": 1792469934.9233336,
+      "reason": "See experiment.log"
+    },
+    {
+      "destination": "a110.speedtest.wobcom.de:5201",
+      "repetition": 3,
+      "requested_algorithm": "bbr",
+      "status": "failed",
+      "run_id": "q3-test-d3-r3-bbr",
+      "started_at_unix_s": 1792469936.923893,
+      "finished_at_unix_s": 1792469937.2034318,
+      "reason": "See experiment.log"
+    },
+    {
+      "destination": "speedtest.wdc2.us.leaseweb.net:5201",
+      "repetition": 1,
+      "requested_algorithm": "bbr",
+      "status": "ok",
+      "run_id": "q3-test-d4-r1-bbr",
+      "started_at_unix_s": 1792469939.2047884,
+      "finished_at_unix_s": 1792469999.788137,
+      "csv": "q3-test-d4-r1-bbr_speedtest.wdc2.us.leaseweb.net_5201.csv",
+      "actual_algorithm": "bbr"
+    },
+    {
+      "destination": "speedtest.wdc2.us.leaseweb.net:5201",
+      "repetition": 1,
+      "requested_algorithm": "cubic",
+      "status": "ok",
+      "run_id": "q3-test-d4-r1-cubic",
+      "started_at_unix_s": 1792470001.789649,
+      "finished_at_unix_s": 1792470062.8092136,
+      "csv": "q3-test-d4-r1-cubic_speedtest.wdc2.us.leaseweb.net_5201.csv",
+      "actual_algorithm": "cubic"
+    },
+    {
+      "destination": "speedtest.wdc2.us.leaseweb.net:5201",
+      "repetition": 1,
+      "requested_algorithm": "reno",
+      "status": "ok",
+      "run_id": "q3-test-d4-r1-reno",
+      "started_at_unix_s": 1792470064.8109148,
+      "finished_at_unix_s": 1792470125.2235997,
+      "csv": "q3-test-d4-r1-reno_speedtest.wdc2.us.leaseweb.net_5201.csv",
+      "actual_algorithm": "reno"
+    },
+    {
+      "destination": "speedtest.wdc2.us.leaseweb.net:5201",
+      "repetition": 2,
+      "requested_algorithm": "cubic",
+      "status": "ok",
+      "run_id": "q3-test-d4-r2-cubic",
+      "started_at_unix_s": 1792470127.2250905,
+      "finished_at_unix_s": 1792470187.5270886,
+      "csv": "q3-test-d4-r2-cubic_speedtest.wdc2.us.leaseweb.net_5201.csv",
+      "actual_algorithm": "cubic"
+    },
+    {
+      "destination": "speedtest.wdc2.us.leaseweb.net:5201",
+      "repetition": 2,
+      "requested_algorithm": "reno",
+      "status": "failed",
+      "run_id": "q3-test-d4-r2-reno",
+      "started_at_unix_s": 1792470189.5285816,
+      "finished_at_unix_s": 1792470246.4272265,
+      "reason": "See experiment.log"
+    },
+    {
+      "destination": "speedtest.wdc2.us.leaseweb.net:5201",
+      "repetition": 2,
+      "requested_algorithm": "bbr",
+      "status": "ok",
+      "run_id": "q3-test-d4-r2-bbr",
+      "started_at_unix_s": 1792470248.4278955,
+      "finished_at_unix_s": 1792470308.7918408,
+      "csv": "q3-test-d4-r2-bbr_speedtest.wdc2.us.leaseweb.net_5201.csv",
+      "actual_algorithm": "bbr"
+    },
+    {
+      "destination": "speedtest.wdc2.us.leaseweb.net:5201",
+      "repetition": 3,
+      "requested_algorithm": "reno",
+      "status": "ok",
+      "run_id": "q3-test-d4-r3-reno",
+      "started_at_unix_s": 1792470310.7934413,
+      "finished_at_unix_s": 1792470371.0683968,
+      "csv": "q3-test-d4-r3-reno_speedtest.wdc2.us.leaseweb.net_5201.csv",
+      "actual_algorithm": "reno"
+    },
+    {
+      "destination": "speedtest.wdc2.us.leaseweb.net:5201",
+      "repetition": 3,
+      "requested_algorithm": "bbr",
+      "status": "ok",
+      "run_id": "q3-test-d4-r3-bbr",
+      "started_at_unix_s": 1792470373.0700378,
+      "finished_at_unix_s": 1792470433.40812,
+      "csv": "q3-test-d4-r3-bbr_speedtest.wdc2.us.leaseweb.net_5201.csv",
+      "actual_algorithm": "bbr"
+    },
+    {
+      "destination": "speedtest.wdc2.us.leaseweb.net:5201",
+      "repetition": 3,
+      "requested_algorithm": "cubic",
+      "status": "ok",
+      "run_id": "q3-test-d4-r3-cubic",
+      "started_at_unix_s": 1792470435.4096694,
+      "finished_at_unix_s": 1792470495.7082655,
+      "csv": "q3-test-d4-r3-cubic_speedtest.wdc2.us.leaseweb.net_5201.csv",
+      "actual_algorithm": "cubic"
+    },
+    {
+      "destination": "nl.speed.vps1.net:5201",
+      "repetition": 1,
+      "requested_algorithm": "cubic",
+      "status": "ok",
+      "run_id": "q3-test-d5-r1-cubic",
+      "started_at_unix_s": 1792470497.7114973,
+      "finished_at_unix_s": 1792470559.1315413,
+      "csv": "q3-test-d5-r1-cubic_nl.speed.vps1.net_5201.csv",
+      "actual_algorithm": "cubic"
+    },
+    {
+      "destination": "nl.speed.vps1.net:5201",
+      "repetition": 1,
+      "requested_algorithm": "reno",
+      "status": "ok",
+      "run_id": "q3-test-d5-r1-reno",
+      "started_at_unix_s": 1792470561.134912,
+      "finished_at_unix_s": 1792470622.62675,
+      "csv": "q3-test-d5-r1-reno_nl.speed.vps1.net_5201.csv",
+      "actual_algorithm": "reno"
+    },
+    {
+      "destination": "nl.speed.vps1.net:5201",
+      "repetition": 1,
+      "requested_algorithm": "bbr",
+      "status": "ok",
+      "run_id": "q3-test-d5-r1-bbr",
+      "started_at_unix_s": 1792470624.628457,
+      "finished_at_unix_s": 1792470685.6909761,
+      "csv": "q3-test-d5-r1-bbr_nl.speed.vps1.net_5201.csv",
+      "actual_algorithm": "bbr"
+    },
+    {
+      "destination": "nl.speed.vps1.net:5201",
+      "repetition": 2,
+      "requested_algorithm": "reno",
+      "status": "failed",
+      "run_id": "q3-test-d5-r2-reno",
+      "started_at_unix_s": 1792470687.6945117,
+      "finished_at_unix_s": 1792470751.392104,
+      "reason": "See experiment.log"
+    },
+    {
+      "destination": "nl.speed.vps1.net:5201",
+      "repetition": 2,
+      "requested_algorithm": "bbr",
+      "status": "failed",
+      "run_id": "q3-test-d5-r2-bbr",
+      "started_at_unix_s": 1792470753.3927872,
+      "finished_at_unix_s": 1792470817.095482,
+      "reason": "See experiment.log"
+    },
+    {
+      "destination": "nl.speed.vps1.net:5201",
+      "repetition": 2,
+      "requested_algorithm": "cubic",
+      "status": "ok",
+      "run_id": "q3-test-d5-r2-cubic",
+      "started_at_unix_s": 1792470819.0962188,
+      "finished_at_unix_s": 1792470880.1530294,
+      "csv": "q3-test-d5-r2-cubic_nl.speed.vps1.net_5201.csv",
+      "actual_algorithm": "cubic"
+    },
+    {
+      "destination": "nl.speed.vps1.net:5201",
+      "repetition": 3,
+      "requested_algorithm": "bbr",
+      "status": "failed",
+      "run_id": "q3-test-d5-r3-bbr",
+      "started_at_unix_s": 1792470882.1565614,
+      "finished_at_unix_s": 1792470945.8710961,
+      "reason": "See experiment.log"
+    },
+    {
+      "destination": "nl.speed.vps1.net:5201",
+      "repetition": 3,
+      "requested_algorithm": "cubic",
+      "status": "ok",
+      "run_id": "q3-test-d5-r3-cubic",
+      "started_at_unix_s": 1792470947.8715625,
+      "finished_at_unix_s": 1792471008.960489,
+      "csv": "q3-test-d5-r3-cubic_nl.speed.vps1.net_5201.csv",
+      "actual_algorithm": "cubic"
+    },
+    {
+      "destination": "nl.speed.vps1.net:5201",
+      "repetition": 3,
+      "requested_algorithm": "reno",
+      "status": "failed",
+      "run_id": "q3-test-d5-r3-reno",
+      "started_at_unix_s": 1792471010.9625525,
+      "finished_at_unix_s": 1792471074.6744254,
+      "reason": "See experiment.log"
+    },
+    {
+      "destination": "speed.netfiber.net.il:5201",
+      "repetition": 1,
+      "requested_algorithm": "reno",
+      "status": "ok",
+      "run_id": "q3-test-d6-r1-reno",
+      "started_at_unix_s": 1792471076.6772664,
+      "finished_at_unix_s": 1792471138.0456998,
+      "csv": "q3-test-d6-r1-reno_speed.netfiber.net.il_5201.csv",
+      "actual_algorithm": "reno"
+    },
+    {
+      "destination": "speed.netfiber.net.il:5201",
+      "repetition": 1,
+      "requested_algorithm": "bbr",
+      "status": "ok",
+      "run_id": "q3-test-d6-r1-bbr",
+      "started_at_unix_s": 1792471140.0489116,
+      "finished_at_unix_s": 1792471201.427016,
+      "csv": "q3-test-d6-r1-bbr_speed.netfiber.net.il_5201.csv",
+      "actual_algorithm": "bbr"
+    },
+    {
+      "destination": "speed.netfiber.net.il:5201",
+      "repetition": 1,
+      "requested_algorithm": "cubic",
+      "status": "ok",
+      "run_id": "q3-test-d6-r1-cubic",
+      "started_at_unix_s": 1792471203.4287243,
+      "finished_at_unix_s": 1792471264.7634306,
+      "csv": "q3-test-d6-r1-cubic_speed.netfiber.net.il_5201.csv",
+      "actual_algorithm": "cubic"
+    },
+    {
+      "destination": "speed.netfiber.net.il:5201",
+      "repetition": 2,
+      "requested_algorithm": "bbr",
+      "status": "ok",
+      "run_id": "q3-test-d6-r2-bbr",
+      "started_at_unix_s": 1792471266.7651365,
+      "finished_at_unix_s": 1792471328.0323575,
+      "csv": "q3-test-d6-r2-bbr_speed.netfiber.net.il_5201.csv",
+      "actual_algorithm": "bbr"
+    },
+    {
+      "destination": "speed.netfiber.net.il:5201",
+      "repetition": 2,
+      "requested_algorithm": "cubic",
+      "status": "ok",
+      "run_id": "q3-test-d6-r2-cubic",
+      "started_at_unix_s": 1792471330.0356572,
+      "finished_at_unix_s": 1792471391.3136108,
+      "csv": "q3-test-d6-r2-cubic_speed.netfiber.net.il_5201.csv",
+      "actual_algorithm": "cubic"
+    },
+    {
+      "destination": "speed.netfiber.net.il:5201",
+      "repetition": 2,
+      "requested_algorithm": "reno",
+      "status": "ok",
+      "run_id": "q3-test-d6-r2-reno",
+      "started_at_unix_s": 1792471393.315139,
+      "finished_at_unix_s": 1792471454.618079,
+      "csv": "q3-test-d6-r2-reno_speed.netfiber.net.il_5201.csv",
+      "actual_algorithm": "reno"
+    },
+    {
+      "destination": "speed.netfiber.net.il:5201",
+      "repetition": 3,
+      "requested_algorithm": "cubic",
+      "status": "ok",
+      "run_id": "q3-test-d6-r3-cubic",
+      "started_at_unix_s": 1792471456.619762,
+      "finished_at_unix_s": 1792471517.9511766,
+      "csv": "q3-test-d6-r3-cubic_speed.netfiber.net.il_5201.csv",
+      "actual_algorithm": "cubic"
+    },
+    {
+      "destination": "speed.netfiber.net.il:5201",
+      "repetition": 3,
+      "requested_algorithm": "reno",
+      "status": "ok",
+      "run_id": "q3-test-d6-r3-reno",
+      "started_at_unix_s": 1792471519.9543226,
+      "finished_at_unix_s": 1792471581.212885,
+      "csv": "q3-test-d6-r3-reno_speed.netfiber.net.il_5201.csv",
+      "actual_algorithm": "reno"
+    },
+    {
+      "destination": "speed.netfiber.net.il:5201",
+      "repetition": 3,
+      "requested_algorithm": "bbr",
+      "status": "ok",
+      "run_id": "q3-test-d6-r3-bbr",
+      "started_at_unix_s": 1792471583.2148528,
+      "finished_at_unix_s": 1792471644.489559,
+      "csv": "q3-test-d6-r3-bbr_speed.netfiber.net.il_5201.csv",
+      "actual_algorithm": "bbr"
+    },
+    {
+      "destination": "iperf.pendc.com:5201",
+      "repetition": 1,
+      "requested_algorithm": "bbr",
+      "status": "failed",
+      "run_id": "q3-test-d7-r1-bbr",
+      "started_at_unix_s": 1792471646.4947646,
+      "finished_at_unix_s": 1792471710.5520594,
+      "reason": "See experiment.log"
+    },
+    {
+      "destination": "iperf.pendc.com:5201",
+      "repetition": 1,
+      "requested_algorithm": "cubic",
+      "status": "failed",
+      "run_id": "q3-test-d7-r1-cubic",
+      "started_at_unix_s": 1792471712.5528984,
+      "finished_at_unix_s": 1792471776.6123774,
+      "reason": "See experiment.log"
+    },
+    {
+      "destination": "iperf.pendc.com:5201",
+      "repetition": 1,
+      "requested_algorithm": "reno",
+      "status": "ok",
+      "run_id": "q3-test-d7-r1-reno",
+      "started_at_unix_s": 1792471778.6130633,
+      "finished_at_unix_s": 1792471840.2007744,
+      "csv": "q3-test-d7-r1-reno_iperf.pendc.com_5201.csv",
+      "actual_algorithm": "reno"
+    },
+    {
+      "destination": "iperf.pendc.com:5201",
+      "repetition": 2,
+      "requested_algorithm": "cubic",
+      "status": "ok",
+      "run_id": "q3-test-d7-r2-cubic",
+      "started_at_unix_s": 1792471842.2024436,
+      "finished_at_unix_s": 1792471903.7801867,
+      "csv": "q3-test-d7-r2-cubic_iperf.pendc.com_5201.csv",
+      "actual_algorithm": "cubic"
+    },
+    {
+      "destination": "iperf.pendc.com:5201",
+      "repetition": 2,
+      "requested_algorithm": "reno",
+      "status": "ok",
+      "run_id": "q3-test-d7-r2-reno",
+      "started_at_unix_s": 1792471905.7820966,
+      "finished_at_unix_s": 1792471967.3772318,
+      "csv": "q3-test-d7-r2-reno_iperf.pendc.com_5201.csv",
+      "actual_algorithm": "reno"
+    },
+    {
+      "destination": "iperf.pendc.com:5201",
+      "repetition": 2,
+      "requested_algorithm": "bbr",
+      "status": "ok",
+      "run_id": "q3-test-d7-r2-bbr",
+      "started_at_unix_s": 1792471969.3794365,
+      "finished_at_unix_s": 1792472030.914472,
+      "csv": "q3-test-d7-r2-bbr_iperf.pendc.com_5201.csv",
+      "actual_algorithm": "bbr"
+    },
+    {
+      "destination": "iperf.pendc.com:5201",
+      "repetition": 3,
+      "requested_algorithm": "reno",
+      "status": "ok",
+      "run_id": "q3-test-d7-r3-reno",
+      "started_at_unix_s": 1792472032.916212,
+      "finished_at_unix_s": 1792472094.74803,
+      "csv": "q3-test-d7-r3-reno_iperf.pendc.com_5201.csv",
+      "actual_algorithm": "reno"
+    },
+    {
+      "destination": "iperf.pendc.com:5201",
+      "repetition": 3,
+      "requested_algorithm": "bbr",
+      "status": "ok",
+      "run_id": "q3-test-d7-r3-bbr",
+      "started_at_unix_s": 1792472096.750385,
+      "finished_at_unix_s": 1792472158.3150854,
+      "csv": "q3-test-d7-r3-bbr_iperf.pendc.com_5201.csv",
+      "actual_algorithm": "bbr"
+    },
+    {
+      "destination": "iperf.pendc.com:5201",
+      "repetition": 3,
+      "requested_algorithm": "cubic",
+      "status": "ok",
+      "run_id": "q3-test-d7-r3-cubic",
+      "started_at_unix_s": 1792472160.3178334,
+      "finished_at_unix_s": 1792472221.9871297,
+      "csv": "q3-test-d7-r3-cubic_iperf.pendc.com_5201.csv",
+      "actual_algorithm": "cubic"
+    },
+    {
+      "destination": "96.45.41.167:30001",
+      "repetition": 1,
+      "requested_algorithm": "cubic",
+      "status": "ok",
+      "run_id": "q3-test-d8-r1-cubic",
+      "started_at_unix_s": 1792472223.9929786,
+      "finished_at_unix_s": 1792472284.8127031,
+      "csv": "q3-test-d8-r1-cubic_96.45.41.167_30001.csv",
+      "actual_algorithm": "cubic"
+    },
+    {
+      "destination": "96.45.41.167:30001",
+      "repetition": 1,
+      "requested_algorithm": "reno",
+      "status": "ok",
+      "run_id": "q3-test-d8-r1-reno",
+      "started_at_unix_s": 1792472286.8143501,
+      "finished_at_unix_s": 1792472347.6397572,
+      "csv": "q3-test-d8-r1-reno_96.45.41.167_30001.csv",
+      "actual_algorithm": "reno"
+    },
+    {
+      "destination": "96.45.41.167:30001",
+      "repetition": 1,
+      "requested_algorithm": "bbr",
+      "status": "ok",
+      "run_id": "q3-test-d8-r1-bbr",
+      "started_at_unix_s": 1792472349.6431818,
+      "finished_at_unix_s": 1792472410.5308528,
+      "csv": "q3-test-d8-r1-bbr_96.45.41.167_30001.csv",
+      "actual_algorithm": "bbr"
+    },
+    {
+      "destination": "96.45.41.167:30001",
+      "repetition": 2,
+      "requested_algorithm": "reno",
+      "status": "ok",
+      "run_id": "q3-test-d8-r2-reno",
+      "started_at_unix_s": 1792472412.5346649,
+      "finished_at_unix_s": 1792472473.3966966,
+      "csv": "q3-test-d8-r2-reno_96.45.41.167_30001.csv",
+      "actual_algorithm": "reno"
+    },
+    {
+      "destination": "96.45.41.167:30001",
+      "repetition": 2,
+      "requested_algorithm": "bbr",
+      "status": "ok",
+      "run_id": "q3-test-d8-r2-bbr",
+      "started_at_unix_s": 1792472475.4000306,
+      "finished_at_unix_s": 1792472536.2840514,
+      "csv": "q3-test-d8-r2-bbr_96.45.41.167_30001.csv",
+      "actual_algorithm": "bbr"
+    },
+    {
+      "destination": "96.45.41.167:30001",
+      "repetition": 2,
+      "requested_algorithm": "cubic",
+      "status": "ok",
+      "run_id": "q3-test-d8-r2-cubic",
+      "started_at_unix_s": 1792472538.2881157,
+      "finished_at_unix_s": 1792472599.1561189,
+      "csv": "q3-test-d8-r2-cubic_96.45.41.167_30001.csv",
+      "actual_algorithm": "cubic"
+    },
+    {
+      "destination": "96.45.41.167:30001",
+      "repetition": 3,
+      "requested_algorithm": "bbr",
+      "status": "ok",
+      "run_id": "q3-test-d8-r3-bbr",
+      "started_at_unix_s": 1792472601.1586206,
+      "finished_at_unix_s": 1792472662.000942,
+      "csv": "q3-test-d8-r3-bbr_96.45.41.167_30001.csv",
+      "actual_algorithm": "bbr"
+    },
+    {
+      "destination": "96.45.41.167:30001",
+      "repetition": 3,
+      "requested_algorithm": "cubic",
+      "status": "ok",
+      "run_id": "q3-test-d8-r3-cubic",
+      "started_at_unix_s": 1792472664.0044544,
+      "finished_at_unix_s": 1792472724.8193002,
+      "csv": "q3-test-d8-r3-cubic_96.45.41.167_30001.csv",
+      "actual_algorithm": "cubic"
+    },
+    {
+      "destination": "96.45.41.167:30001",
+      "repetition": 3,
+      "requested_algorithm": "reno",
+      "status": "ok",
+      "run_id": "q3-test-d8-r3-reno",
+      "started_at_unix_s": 1792472726.8240135,
+      "finished_at_unix_s": 1792472787.6511,
+      "csv": "q3-test-d8-r3-reno_96.45.41.167_30001.csv",
+      "actual_algorithm": "reno"
+    }
+  ],
+  "complete": true
+}

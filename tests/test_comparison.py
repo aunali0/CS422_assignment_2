@@ -11,7 +11,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from client import ClientConfig, TestResult, data_connection
 from comparison import load_run, preflight, run_comparison
-from comparison_plots import build_report, percentile, run_statistics
+from comparison_plots import build_report, percentile, run_statistics, plot_comparison
+import matplotlib.pyplot as plt
+from reviewed_report import build_reviewed_report
 from dataclasses import replace
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -122,6 +124,41 @@ class ComparisonTests(unittest.TestCase):
                          "comparison-scatter.pdf", "per-run-summary.csv", "aggregate-summary.csv"):
                 self.assertGreater((out / name).stat().st_size, 100)
             self.assertIn("cubic", (out / "comparison-report.md").read_text())
+            (out / "observations.md").write_text("# Test report\n\nOffline fixture only.")
+            build_reviewed_report(manifest, runs, out)
+            self.assertGreater((out / "Q3_REPORT.pdf").stat().st_size, 100)
+            self.assertTrue((out / "supporting/representative-timeseries.pdf").exists())
+
+    def test_common_axes_include_later_algorithms(self):
+        meta, samples = load_run(BASELINE)
+        runs = []
+        for algorithm, window, rtt, goodput in (("cubic", 100, 10_000, 10),
+                                                ("reno", 9000, 400_000, 200),
+                                                ("bbr", 4000, 200_000, 100)):
+            sample = replace(samples[0], goodput=goodput,
+                             info={**samples[0].info, "snd_cwnd": window, "rtt": rtt})
+            runs.append(({"repetition": 1}, (replace(meta, algorithm=algorithm), [sample])))
+        figures = []
+        original_close = plt.close
+        def capture(fig):
+            if hasattr(fig, "axes"):
+                figures.append(fig)
+            original_close(fig)
+        with tempfile.TemporaryDirectory() as directory, patch(
+            "comparison_plots.plt.close", side_effect=capture
+        ):
+            out = Path(directory)
+            plot_comparison(runs, ["cubic", "reno", "bbr"], meta.destination(), MagicMock(),
+                            out / "timeseries.pdf", out / "scatter.pdf")
+        timeseries, scatter = figures
+        self.assertGreaterEqual(timeseries.axes[0].get_ylim()[1], 9000)
+        self.assertGreaterEqual(timeseries.axes[3].get_ylim()[1], 400)
+        self.assertGreaterEqual(timeseries.axes[9].get_ylim()[1], 200)
+        self.assertGreaterEqual(scatter.axes[0].get_xlim()[1], 9000)
+        self.assertGreaterEqual(scatter.axes[3].get_xlim()[1], 400)
+        self.assertGreaterEqual(scatter.axes[0].get_ylim()[1], 200)
+        self.assertEqual(timeseries.axes[0].get_ylim(), timeseries.axes[2].get_ylim())
+        self.assertEqual(scatter.axes[0].get_xlim(), scatter.axes[2].get_xlim())
 
     def test_no_complete_group_produces_no_comparison_claim(self):
         run = load_run(BASELINE)

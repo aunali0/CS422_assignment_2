@@ -91,15 +91,16 @@ def plot_comparison(runs, algorithms, destination, pdf, times_pdf, scatter_pdf):
                                     color=colors[algorithm], alpha=.65,
                                     linestyle=["-", "--", ":", "-."][(test["repetition"] - 1) % 4],
                                     label=f"Run {test['repetition']}")
-                axes[row, col].set_ylim(bottom=0)
-                axes[row, col].set_xlim(left=0)
                 style_axes(axes[row, col])
         axes[0, col].legend(fontsize=8)
         axes[-1, col].set_xlabel("Time (s)")
+    for ax in axes.flat:
+        ax.set_xlim(left=0)
+        ax.set_ylim(bottom=0)
     for row, (label, _) in enumerate(metrics):
         axes[row, 0].set_ylabel(label)
-    fig.savefig(times_pdf)
-    pdf.savefig(fig)
+    fig.savefig(times_pdf, bbox_inches="tight", pad_inches=.15)
+    pdf.savefig(fig, bbox_inches="tight", pad_inches=.15)
     plt.close(fig)
     fig, axes = plt.subplots(3, len(algorithms), squeeze=False, figsize=(5 * len(algorithms), 10),
                              sharex="row", sharey=True, layout="constrained")
@@ -115,14 +116,15 @@ def plot_comparison(runs, algorithms, destination, pdf, times_pdf, scatter_pdf):
                                        marker=["o", "x", "^", "s"][(test["repetition"] - 1) % 4],
                                        label=f"Run {test['repetition']}")
                 axes[row, col].set_xlabel(label)
-                axes[row, col].set_xlim(left=0)
-                axes[row, col].set_ylim(bottom=0)
                 style_axes(axes[row, col])
         axes[0, col].legend(fontsize=8)
+    for ax in axes.flat:
+        ax.set_xlim(left=0)
+        ax.set_ylim(bottom=0)
     for ax in axes[:, 0]:
         ax.set_ylabel("Goodput (Mbit/s)")
-    fig.savefig(scatter_pdf)
-    pdf.savefig(fig)
+    fig.savefig(scatter_pdf, bbox_inches="tight", pad_inches=.15)
+    pdf.savefig(fig, bbox_inches="tight", pad_inches=.15)
     plt.close(fig)
 
 

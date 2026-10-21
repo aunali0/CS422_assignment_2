@@ -158,3 +158,5 @@ def analyze_manifest(path: Path) -> None:
     runs = [(test, load_run(path.parent / test["csv"]))
             for test in manifest["tests"] if test["status"] == "ok"]
     build_report(manifest, runs, path.parent)
+    from reviewed_report import build_reviewed_report
+    build_reviewed_report(manifest, runs, path.parent, Path(__file__).with_name("Q3_REPORT.pdf"))

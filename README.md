@@ -10,9 +10,12 @@ The iperf3 binary is never invoked; the client talks to standard public iperf3 s
 
 ## Assignment 2 Q3
 
+**Open [Q3_REPORT.pdf](Q3_REPORT.pdf) for the five-page Q3 report.**
+
 See [Q3_RUN.md](Q3_RUN.md) for the CUBIC/Reno/BBR experiment and Docker commands,
 outputs, and submission steps. [Q3_DESIGN.md](Q3_DESIGN.md) contains the proposed
-algorithm and Assignment 3 handoff. The comparison has not been run on this Mac.
+algorithm and Assignment 3 handoff. The completed comparison, checked measurements, and
+reviewed report are linked from [Q3_RESULTS.md](Q3_RESULTS.md).
 
 ```sh
 python main.py compare -s iperf3-servers.csv -c 10 -t 60 -g 1 -r 3 --run-id q3-final

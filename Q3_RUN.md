@@ -2,7 +2,7 @@
 
 Implemented: algorithm selection before data-socket connect, repeated matched experiments, raw CSV/JSON, common-scale comparison plots, summary tables, a generated report, and algorithm pseudocode in Q3_DESIGN.md.
 
-The CUBIC/Reno/BBR experiments have not been run here. The existing results contain CUBIC only. Do not submit an algorithm ranking or claim this is a completed experimental comparison until the Linux run finishes and the results are reviewed. The generated PDF covers Q3; merge it with the team's Q1/Q2 report and add the repository/function links before submission.
+The full comparison has now been run by a teammate on Linux/WSL2 and imported from res.zip. The checked dataset is results/q3-test: three destinations, three algorithms, three repetitions, 60 seconds per run, and one-second sampling. All 27 matched runs completed. See [Q3_RESULTS.md](Q3_RESULTS.md) for the handoff and [the five-page Q3 report](Q3_REPORT.pdf). Q3_REPORT.pdf is at the top of the repo and includes implementation links, the two required plot pages, analysis, and the algorithm design. The longer report is supporting material under results/q3-test/supporting/. Merge it with the team's Q1/Q2 report for the single assignment submission.
 
 ## Run on Linux or WSL2
 
@@ -47,10 +47,10 @@ A failed candidate is replaced as a whole after its planned tests finish. Partia
 
 The initial algorithm order is seeded and shuffled, then rotated across repetitions and destinations. With three repetitions each algorithm appears once in each order position per destination. With other repetition counts balancing may be incomplete. The first destination that completes every test is the representative, avoiding selection by which algorithm won.
 
-Rebuild plots and reports without network traffic, including on macOS:
+Rebuild the submitted plots and reports without network traffic, including on macOS (observations.md in the run directory supplies the reviewed analysis):
 
 ```sh
-python main.py analyze --manifest results/q3-final/manifest.json
+python main.py analyze --manifest results/q3-test/manifest.json
 ```
 
 ## Handoff and submission
@@ -71,4 +71,4 @@ Review measured differences relative to run variability. Add any trace-specific 
 python -m unittest discover -s tests -v
 ```
 
-Tests check pre-connect algorithm selection, rejection of unavailable/mismatched algorithms, whole-group replacement, balanced order, acknowledged-byte goodput, and offline report generation using existing measurements. Tests use mocked network operations; they do not demonstrate live iperf3 compatibility on Linux. Docker and live three-algorithm experiments remain to be verified on that host.
+Tests check pre-connect algorithm selection, rejection of unavailable/mismatched algorithms, whole-group replacement, balanced order, acknowledged-byte goodput, and offline report generation using existing measurements. Tests use mocked network operations; they do not demonstrate live iperf3 compatibility on Linux. The imported live three-algorithm results passed the checks recorded in results/q3-test/validation.json. The Docker build remains unverified; the supplied run manifest does not record whether Docker was used.
