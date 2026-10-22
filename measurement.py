@@ -1,4 +1,4 @@
-#holds per sample record, run metadata, and csv/json persistence
+# holds per sample record, run metadata, and csv/json persistence
 
 import csv
 import json
@@ -38,10 +38,8 @@ SAMPLE_COLUMNS = tuple(SAMPLE_UNITS)
 TCP_INFO_COLUMNS = tuple(f"tcpi_{name}" for name, _ in TCP_INFO_FIELDS)
 CSV_COLUMNS = SAMPLE_COLUMNS + TCP_INFO_COLUMNS
 
-CSV_UNITS = {
-    **SAMPLE_UNITS,
-    **{f"tcpi_{name}": unit for name, unit in TCP_INFO_UNITS.items()},
-}
+CSV_UNITS = {**SAMPLE_UNITS, **{f"tcpi_{name}": unit for name, unit in TCP_INFO_UNITS.items()}}
+
 
 @dataclass(frozen=True)
 class Sample:
@@ -127,11 +125,21 @@ def sample_row(meta: RunMetadata, sample: Sample) -> dict[str, object]:
 
     return row
 
+
+def create_run_directory(out_dir: Path, run_id: str, category: str) -> Path:
+    path = out_dir / category / run_id
+    try:
+        path.mkdir(parents=True)
+    except FileExistsError:
+        raise SystemExit(f"Output directory already exists: {path}. Choose a fresh --run-id.") from None
+    return path
+
+
 def save_run(meta: RunMetadata, samples: list[Sample], out_dir: Path) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    csv_path = out_dir / f"{meta.slug()}.csv"
-    json_path = out_dir / f"{meta.slug()}.json"
+    csv_path = out_dir / "tcp-samples.csv"
+    json_path = out_dir / "test-metadata.json"
 
     with open(csv_path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)

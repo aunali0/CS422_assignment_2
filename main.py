@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from cli import create_parser
 from client import ClientConfig, try_run_test
 from destinations import load_servers, run_destinations
-from measurement import save_run
+from measurement import create_run_directory, save_run
 from plots import save_run_plots
 
 
@@ -16,6 +16,7 @@ def main() -> None:
 
     if args.command == "analyze":
         from comparison import analyze_manifest
+
         analyze_manifest(args.manifest)
         return
 
@@ -33,19 +34,25 @@ def main() -> None:
 
     if args.command == "compare":
         from comparison import run_comparison
+
         if args.algorithm:
             raise SystemExit("Use --algorithms with compare")
+
         complete = run_comparison(args, client_config, run_id)
+
         if not complete:
             raise SystemExit(1)
+
     elif args.command == "test":
+        out = create_run_directory(args.out_dir, run_id, "single-server-tests")
         result = try_run_test(args.host, args.port, client_config, run_id)
 
         if result is None:
             raise SystemExit(1)
 
-        save_run(result.metadata, result.samples, args.out_dir)
-        save_run_plots(result.metadata, result.samples, args.out_dir)
+        trace_dir = out / "tcp-traces" / result.metadata.slug()
+        save_run(result.metadata, result.samples, trace_dir)
+        save_run_plots(result.metadata, result.samples, trace_dir)
 
     elif args.command == "destinations":
         run_destinations(

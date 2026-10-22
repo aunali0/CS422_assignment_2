@@ -87,7 +87,7 @@
       "run_id": "q3-test-d1-r1-bbr",
       "started_at_unix_s": 1792469172.755238,
       "finished_at_unix_s": 1792469233.1084936,
-      "csv": "q3-test-d1-r1-bbr_dal.speedtest.clouvider.net_5200.csv",
+      "csv": "tcp-traces/q3-test-d1-r1-bbr_dal.speedtest.clouvider.net_5200/tcp-samples.csv",
       "actual_algorithm": "bbr"
     },
     {
@@ -98,7 +98,7 @@
       "run_id": "q3-test-d1-r1-cubic",
       "started_at_unix_s": 1792469235.1102087,
       "finished_at_unix_s": 1792469295.5219417,
-      "csv": "q3-test-d1-r1-cubic_dal.speedtest.clouvider.net_5200.csv",
+      "csv": "tcp-traces/q3-test-d1-r1-cubic_dal.speedtest.clouvider.net_5200/tcp-samples.csv",
       "actual_algorithm": "cubic"
     },
     {
@@ -109,7 +109,7 @@
       "run_id": "q3-test-d1-r1-reno",
       "started_at_unix_s": 1792469297.5267384,
       "finished_at_unix_s": 1792469357.9373238,
-      "csv": "q3-test-d1-r1-reno_dal.speedtest.clouvider.net_5200.csv",
+      "csv": "tcp-traces/q3-test-d1-r1-reno_dal.speedtest.clouvider.net_5200/tcp-samples.csv",
       "actual_algorithm": "reno"
     },
     {
@@ -120,7 +120,7 @@
       "run_id": "q3-test-d1-r2-cubic",
       "started_at_unix_s": 1792469359.940483,
       "finished_at_unix_s": 1792469420.3331225,
-      "csv": "q3-test-d1-r2-cubic_dal.speedtest.clouvider.net_5200.csv",
+      "csv": "tcp-traces/q3-test-d1-r2-cubic_dal.speedtest.clouvider.net_5200/tcp-samples.csv",
       "actual_algorithm": "cubic"
     },
     {
@@ -131,7 +131,7 @@
       "run_id": "q3-test-d1-r2-reno",
       "started_at_unix_s": 1792469422.3365679,
       "finished_at_unix_s": 1792469482.785671,
-      "csv": "q3-test-d1-r2-reno_dal.speedtest.clouvider.net_5200.csv",
+      "csv": "tcp-traces/q3-test-d1-r2-reno_dal.speedtest.clouvider.net_5200/tcp-samples.csv",
       "actual_algorithm": "reno"
     },
     {
@@ -142,7 +142,7 @@
       "run_id": "q3-test-d1-r2-bbr",
       "started_at_unix_s": 1792469484.7902465,
       "finished_at_unix_s": 1792469545.1860673,
-      "csv": "q3-test-d1-r2-bbr_dal.speedtest.clouvider.net_5200.csv",
+      "csv": "tcp-traces/q3-test-d1-r2-bbr_dal.speedtest.clouvider.net_5200/tcp-samples.csv",
       "actual_algorithm": "bbr"
     },
     {
@@ -153,7 +153,7 @@
       "run_id": "q3-test-d1-r3-reno",
       "started_at_unix_s": 1792469547.1891575,
       "finished_at_unix_s": 1792469607.6167202,
-      "csv": "q3-test-d1-r3-reno_dal.speedtest.clouvider.net_5200.csv",
+      "csv": "tcp-traces/q3-test-d1-r3-reno_dal.speedtest.clouvider.net_5200/tcp-samples.csv",
       "actual_algorithm": "reno"
     },
     {
@@ -164,7 +164,7 @@
       "run_id": "q3-test-d1-r3-bbr",
       "started_at_unix_s": 1792469609.6197567,
       "finished_at_unix_s": 1792469670.025397,
-      "csv": "q3-test-d1-r3-bbr_dal.speedtest.clouvider.net_5200.csv",
+      "csv": "tcp-traces/q3-test-d1-r3-bbr_dal.speedtest.clouvider.net_5200/tcp-samples.csv",
       "actual_algorithm": "bbr"
     },
     {
@@ -175,7 +175,7 @@
       "run_id": "q3-test-d1-r3-cubic",
       "started_at_unix_s": 1792469672.0268962,
       "finished_at_unix_s": 1792469732.416733,
-      "csv": "q3-test-d1-r3-cubic_dal.speedtest.clouvider.net_5200.csv",
+      "csv": "tcp-traces/q3-test-d1-r3-cubic_dal.speedtest.clouvider.net_5200/tcp-samples.csv",
       "actual_algorithm": "cubic"
     },
     {
@@ -306,7 +306,7 @@
       "run_id": "q3-test-d3-r2-bbr",
       "started_at_unix_s": 1792469803.7854538,
       "finished_at_unix_s": 1792469865.230751,
-      "csv": "q3-test-d3-r2-bbr_a110.speedtest.wobcom.de_5201.csv",
+      "csv": "tcp-traces/q3-test-d3-r2-bbr_a110.speedtest.wobcom.de_5201/tcp-samples.csv",
       "actual_algorithm": "bbr"
     },
     {
@@ -317,7 +317,7 @@
       "run_id": "q3-test-d3-r2-cubic",
       "started_at_unix_s": 1792469867.2325776,
       "finished_at_unix_s": 1792469928.1226842,
-      "csv": "q3-test-d3-r2-cubic_a110.speedtest.wobcom.de_5201.csv",
+      "csv": "tcp-traces/q3-test-d3-r2-cubic_a110.speedtest.wobcom.de_5201/tcp-samples.csv",
       "actual_algorithm": "cubic"
     },
     {
@@ -368,7 +368,7 @@
       "run_id": "q3-test-d4-r1-bbr",
       "started_at_unix_s": 1792469939.2047884,
       "finished_at_unix_s": 1792469999.788137,
-      "csv": "q3-test-d4-r1-bbr_speedtest.wdc2.us.leaseweb.net_5201.csv",
+      "csv": "tcp-traces/q3-test-d4-r1-bbr_speedtest.wdc2.us.leaseweb.net_5201/tcp-samples.csv",
       "actual_algorithm": "bbr"
     },
     {
@@ -379,7 +379,7 @@
       "run_id": "q3-test-d4-r1-cubic",
       "started_at_unix_s": 1792470001.789649,
       "finished_at_unix_s": 1792470062.8092136,
-      "csv": "q3-test-d4-r1-cubic_speedtest.wdc2.us.leaseweb.net_5201.csv",
+      "csv": "tcp-traces/q3-test-d4-r1-cubic_speedtest.wdc2.us.leaseweb.net_5201/tcp-samples.csv",
       "actual_algorithm": "cubic"
     },
     {
@@ -390,7 +390,7 @@
       "run_id": "q3-test-d4-r1-reno",
       "started_at_unix_s": 1792470064.8109148,
       "finished_at_unix_s": 1792470125.2235997,
-      "csv": "q3-test-d4-r1-reno_speedtest.wdc2.us.leaseweb.net_5201.csv",
+      "csv": "tcp-traces/q3-test-d4-r1-reno_speedtest.wdc2.us.leaseweb.net_5201/tcp-samples.csv",
       "actual_algorithm": "reno"
     },
     {
@@ -401,7 +401,7 @@
       "run_id": "q3-test-d4-r2-cubic",
       "started_at_unix_s": 1792470127.2250905,
       "finished_at_unix_s": 1792470187.5270886,
-      "csv": "q3-test-d4-r2-cubic_speedtest.wdc2.us.leaseweb.net_5201.csv",
+      "csv": "tcp-traces/q3-test-d4-r2-cubic_speedtest.wdc2.us.leaseweb.net_5201/tcp-samples.csv",
       "actual_algorithm": "cubic"
     },
     {
@@ -422,7 +422,7 @@
       "run_id": "q3-test-d4-r2-bbr",
       "started_at_unix_s": 1792470248.4278955,
       "finished_at_unix_s": 1792470308.7918408,
-      "csv": "q3-test-d4-r2-bbr_speedtest.wdc2.us.leaseweb.net_5201.csv",
+      "csv": "tcp-traces/q3-test-d4-r2-bbr_speedtest.wdc2.us.leaseweb.net_5201/tcp-samples.csv",
       "actual_algorithm": "bbr"
     },
     {
@@ -433,7 +433,7 @@
       "run_id": "q3-test-d4-r3-reno",
       "started_at_unix_s": 1792470310.7934413,
       "finished_at_unix_s": 1792470371.0683968,
-      "csv": "q3-test-d4-r3-reno_speedtest.wdc2.us.leaseweb.net_5201.csv",
+      "csv": "tcp-traces/q3-test-d4-r3-reno_speedtest.wdc2.us.leaseweb.net_5201/tcp-samples.csv",
       "actual_algorithm": "reno"
     },
     {
@@ -444,7 +444,7 @@
       "run_id": "q3-test-d4-r3-bbr",
       "started_at_unix_s": 1792470373.0700378,
       "finished_at_unix_s": 1792470433.40812,
-      "csv": "q3-test-d4-r3-bbr_speedtest.wdc2.us.leaseweb.net_5201.csv",
+      "csv": "tcp-traces/q3-test-d4-r3-bbr_speedtest.wdc2.us.leaseweb.net_5201/tcp-samples.csv",
       "actual_algorithm": "bbr"
     },
     {
@@ -455,7 +455,7 @@
       "run_id": "q3-test-d4-r3-cubic",
       "started_at_unix_s": 1792470435.4096694,
       "finished_at_unix_s": 1792470495.7082655,
-      "csv": "q3-test-d4-r3-cubic_speedtest.wdc2.us.leaseweb.net_5201.csv",
+      "csv": "tcp-traces/q3-test-d4-r3-cubic_speedtest.wdc2.us.leaseweb.net_5201/tcp-samples.csv",
       "actual_algorithm": "cubic"
     },
     {
@@ -466,7 +466,7 @@
       "run_id": "q3-test-d5-r1-cubic",
       "started_at_unix_s": 1792470497.7114973,
       "finished_at_unix_s": 1792470559.1315413,
-      "csv": "q3-test-d5-r1-cubic_nl.speed.vps1.net_5201.csv",
+      "csv": "tcp-traces/q3-test-d5-r1-cubic_nl.speed.vps1.net_5201/tcp-samples.csv",
       "actual_algorithm": "cubic"
     },
     {
@@ -477,7 +477,7 @@
       "run_id": "q3-test-d5-r1-reno",
       "started_at_unix_s": 1792470561.134912,
       "finished_at_unix_s": 1792470622.62675,
-      "csv": "q3-test-d5-r1-reno_nl.speed.vps1.net_5201.csv",
+      "csv": "tcp-traces/q3-test-d5-r1-reno_nl.speed.vps1.net_5201/tcp-samples.csv",
       "actual_algorithm": "reno"
     },
     {
@@ -488,7 +488,7 @@
       "run_id": "q3-test-d5-r1-bbr",
       "started_at_unix_s": 1792470624.628457,
       "finished_at_unix_s": 1792470685.6909761,
-      "csv": "q3-test-d5-r1-bbr_nl.speed.vps1.net_5201.csv",
+      "csv": "tcp-traces/q3-test-d5-r1-bbr_nl.speed.vps1.net_5201/tcp-samples.csv",
       "actual_algorithm": "bbr"
     },
     {
@@ -519,7 +519,7 @@
       "run_id": "q3-test-d5-r2-cubic",
       "started_at_unix_s": 1792470819.0962188,
       "finished_at_unix_s": 1792470880.1530294,
-      "csv": "q3-test-d5-r2-cubic_nl.speed.vps1.net_5201.csv",
+      "csv": "tcp-traces/q3-test-d5-r2-cubic_nl.speed.vps1.net_5201/tcp-samples.csv",
       "actual_algorithm": "cubic"
     },
     {
@@ -540,7 +540,7 @@
       "run_id": "q3-test-d5-r3-cubic",
       "started_at_unix_s": 1792470947.8715625,
       "finished_at_unix_s": 1792471008.960489,
-      "csv": "q3-test-d5-r3-cubic_nl.speed.vps1.net_5201.csv",
+      "csv": "tcp-traces/q3-test-d5-r3-cubic_nl.speed.vps1.net_5201/tcp-samples.csv",
       "actual_algorithm": "cubic"
     },
     {
@@ -561,7 +561,7 @@
       "run_id": "q3-test-d6-r1-reno",
       "started_at_unix_s": 1792471076.6772664,
       "finished_at_unix_s": 1792471138.0456998,
-      "csv": "q3-test-d6-r1-reno_speed.netfiber.net.il_5201.csv",
+      "csv": "tcp-traces/q3-test-d6-r1-reno_speed.netfiber.net.il_5201/tcp-samples.csv",
       "actual_algorithm": "reno"
     },
     {
@@ -572,7 +572,7 @@
       "run_id": "q3-test-d6-r1-bbr",
       "started_at_unix_s": 1792471140.0489116,
       "finished_at_unix_s": 1792471201.427016,
-      "csv": "q3-test-d6-r1-bbr_speed.netfiber.net.il_5201.csv",
+      "csv": "tcp-traces/q3-test-d6-r1-bbr_speed.netfiber.net.il_5201/tcp-samples.csv",
       "actual_algorithm": "bbr"
     },
     {
@@ -583,7 +583,7 @@
       "run_id": "q3-test-d6-r1-cubic",
       "started_at_unix_s": 1792471203.4287243,
       "finished_at_unix_s": 1792471264.7634306,
-      "csv": "q3-test-d6-r1-cubic_speed.netfiber.net.il_5201.csv",
+      "csv": "tcp-traces/q3-test-d6-r1-cubic_speed.netfiber.net.il_5201/tcp-samples.csv",
       "actual_algorithm": "cubic"
     },
     {
@@ -594,7 +594,7 @@
       "run_id": "q3-test-d6-r2-bbr",
       "started_at_unix_s": 1792471266.7651365,
       "finished_at_unix_s": 1792471328.0323575,
-      "csv": "q3-test-d6-r2-bbr_speed.netfiber.net.il_5201.csv",
+      "csv": "tcp-traces/q3-test-d6-r2-bbr_speed.netfiber.net.il_5201/tcp-samples.csv",
       "actual_algorithm": "bbr"
     },
     {
@@ -605,7 +605,7 @@
       "run_id": "q3-test-d6-r2-cubic",
       "started_at_unix_s": 1792471330.0356572,
       "finished_at_unix_s": 1792471391.3136108,
-      "csv": "q3-test-d6-r2-cubic_speed.netfiber.net.il_5201.csv",
+      "csv": "tcp-traces/q3-test-d6-r2-cubic_speed.netfiber.net.il_5201/tcp-samples.csv",
       "actual_algorithm": "cubic"
     },
     {
@@ -616,7 +616,7 @@
       "run_id": "q3-test-d6-r2-reno",
       "started_at_unix_s": 1792471393.315139,
       "finished_at_unix_s": 1792471454.618079,
-      "csv": "q3-test-d6-r2-reno_speed.netfiber.net.il_5201.csv",
+      "csv": "tcp-traces/q3-test-d6-r2-reno_speed.netfiber.net.il_5201/tcp-samples.csv",
       "actual_algorithm": "reno"
     },
     {
@@ -627,7 +627,7 @@
       "run_id": "q3-test-d6-r3-cubic",
       "started_at_unix_s": 1792471456.619762,
       "finished_at_unix_s": 1792471517.9511766,
-      "csv": "q3-test-d6-r3-cubic_speed.netfiber.net.il_5201.csv",
+      "csv": "tcp-traces/q3-test-d6-r3-cubic_speed.netfiber.net.il_5201/tcp-samples.csv",
       "actual_algorithm": "cubic"
     },
     {
@@ -638,7 +638,7 @@
       "run_id": "q3-test-d6-r3-reno",
       "started_at_unix_s": 1792471519.9543226,
       "finished_at_unix_s": 1792471581.212885,
-      "csv": "q3-test-d6-r3-reno_speed.netfiber.net.il_5201.csv",
+      "csv": "tcp-traces/q3-test-d6-r3-reno_speed.netfiber.net.il_5201/tcp-samples.csv",
       "actual_algorithm": "reno"
     },
     {
@@ -649,7 +649,7 @@
       "run_id": "q3-test-d6-r3-bbr",
       "started_at_unix_s": 1792471583.2148528,
       "finished_at_unix_s": 1792471644.489559,
-      "csv": "q3-test-d6-r3-bbr_speed.netfiber.net.il_5201.csv",
+      "csv": "tcp-traces/q3-test-d6-r3-bbr_speed.netfiber.net.il_5201/tcp-samples.csv",
       "actual_algorithm": "bbr"
     },
     {
@@ -680,7 +680,7 @@
       "run_id": "q3-test-d7-r1-reno",
       "started_at_unix_s": 1792471778.6130633,
       "finished_at_unix_s": 1792471840.2007744,
-      "csv": "q3-test-d7-r1-reno_iperf.pendc.com_5201.csv",
+      "csv": "tcp-traces/q3-test-d7-r1-reno_iperf.pendc.com_5201/tcp-samples.csv",
       "actual_algorithm": "reno"
     },
     {
@@ -691,7 +691,7 @@
       "run_id": "q3-test-d7-r2-cubic",
       "started_at_unix_s": 1792471842.2024436,
       "finished_at_unix_s": 1792471903.7801867,
-      "csv": "q3-test-d7-r2-cubic_iperf.pendc.com_5201.csv",
+      "csv": "tcp-traces/q3-test-d7-r2-cubic_iperf.pendc.com_5201/tcp-samples.csv",
       "actual_algorithm": "cubic"
     },
     {
@@ -702,7 +702,7 @@
       "run_id": "q3-test-d7-r2-reno",
       "started_at_unix_s": 1792471905.7820966,
       "finished_at_unix_s": 1792471967.3772318,
-      "csv": "q3-test-d7-r2-reno_iperf.pendc.com_5201.csv",
+      "csv": "tcp-traces/q3-test-d7-r2-reno_iperf.pendc.com_5201/tcp-samples.csv",
       "actual_algorithm": "reno"
     },
     {
@@ -713,7 +713,7 @@
       "run_id": "q3-test-d7-r2-bbr",
       "started_at_unix_s": 1792471969.3794365,
       "finished_at_unix_s": 1792472030.914472,
-      "csv": "q3-test-d7-r2-bbr_iperf.pendc.com_5201.csv",
+      "csv": "tcp-traces/q3-test-d7-r2-bbr_iperf.pendc.com_5201/tcp-samples.csv",
       "actual_algorithm": "bbr"
     },
     {
@@ -724,7 +724,7 @@
       "run_id": "q3-test-d7-r3-reno",
       "started_at_unix_s": 1792472032.916212,
       "finished_at_unix_s": 1792472094.74803,
-      "csv": "q3-test-d7-r3-reno_iperf.pendc.com_5201.csv",
+      "csv": "tcp-traces/q3-test-d7-r3-reno_iperf.pendc.com_5201/tcp-samples.csv",
       "actual_algorithm": "reno"
     },
     {
@@ -735,7 +735,7 @@
       "run_id": "q3-test-d7-r3-bbr",
       "started_at_unix_s": 1792472096.750385,
       "finished_at_unix_s": 1792472158.3150854,
-      "csv": "q3-test-d7-r3-bbr_iperf.pendc.com_5201.csv",
+      "csv": "tcp-traces/q3-test-d7-r3-bbr_iperf.pendc.com_5201/tcp-samples.csv",
       "actual_algorithm": "bbr"
     },
     {
@@ -746,7 +746,7 @@
       "run_id": "q3-test-d7-r3-cubic",
       "started_at_unix_s": 1792472160.3178334,
       "finished_at_unix_s": 1792472221.9871297,
-      "csv": "q3-test-d7-r3-cubic_iperf.pendc.com_5201.csv",
+      "csv": "tcp-traces/q3-test-d7-r3-cubic_iperf.pendc.com_5201/tcp-samples.csv",
       "actual_algorithm": "cubic"
     },
     {
@@ -757,7 +757,7 @@
       "run_id": "q3-test-d8-r1-cubic",
       "started_at_unix_s": 1792472223.9929786,
       "finished_at_unix_s": 1792472284.8127031,
-      "csv": "q3-test-d8-r1-cubic_96.45.41.167_30001.csv",
+      "csv": "tcp-traces/q3-test-d8-r1-cubic_96.45.41.167_30001/tcp-samples.csv",
       "actual_algorithm": "cubic"
     },
     {
@@ -768,7 +768,7 @@
       "run_id": "q3-test-d8-r1-reno",
       "started_at_unix_s": 1792472286.8143501,
       "finished_at_unix_s": 1792472347.6397572,
-      "csv": "q3-test-d8-r1-reno_96.45.41.167_30001.csv",
+      "csv": "tcp-traces/q3-test-d8-r1-reno_96.45.41.167_30001/tcp-samples.csv",
       "actual_algorithm": "reno"
     },
     {
@@ -779,7 +779,7 @@
       "run_id": "q3-test-d8-r1-bbr",
       "started_at_unix_s": 1792472349.6431818,
       "finished_at_unix_s": 1792472410.5308528,
-      "csv": "q3-test-d8-r1-bbr_96.45.41.167_30001.csv",
+      "csv": "tcp-traces/q3-test-d8-r1-bbr_96.45.41.167_30001/tcp-samples.csv",
       "actual_algorithm": "bbr"
     },
     {
@@ -790,7 +790,7 @@
       "run_id": "q3-test-d8-r2-reno",
       "started_at_unix_s": 1792472412.5346649,
       "finished_at_unix_s": 1792472473.3966966,
-      "csv": "q3-test-d8-r2-reno_96.45.41.167_30001.csv",
+      "csv": "tcp-traces/q3-test-d8-r2-reno_96.45.41.167_30001/tcp-samples.csv",
       "actual_algorithm": "reno"
     },
     {
@@ -801,7 +801,7 @@
       "run_id": "q3-test-d8-r2-bbr",
       "started_at_unix_s": 1792472475.4000306,
       "finished_at_unix_s": 1792472536.2840514,
-      "csv": "q3-test-d8-r2-bbr_96.45.41.167_30001.csv",
+      "csv": "tcp-traces/q3-test-d8-r2-bbr_96.45.41.167_30001/tcp-samples.csv",
       "actual_algorithm": "bbr"
     },
     {
@@ -812,7 +812,7 @@
       "run_id": "q3-test-d8-r2-cubic",
       "started_at_unix_s": 1792472538.2881157,
       "finished_at_unix_s": 1792472599.1561189,
-      "csv": "q3-test-d8-r2-cubic_96.45.41.167_30001.csv",
+      "csv": "tcp-traces/q3-test-d8-r2-cubic_96.45.41.167_30001/tcp-samples.csv",
       "actual_algorithm": "cubic"
     },
     {
@@ -823,7 +823,7 @@
       "run_id": "q3-test-d8-r3-bbr",
       "started_at_unix_s": 1792472601.1586206,
       "finished_at_unix_s": 1792472662.000942,
-      "csv": "q3-test-d8-r3-bbr_96.45.41.167_30001.csv",
+      "csv": "tcp-traces/q3-test-d8-r3-bbr_96.45.41.167_30001/tcp-samples.csv",
       "actual_algorithm": "bbr"
     },
     {
@@ -834,7 +834,7 @@
       "run_id": "q3-test-d8-r3-cubic",
       "started_at_unix_s": 1792472664.0044544,
       "finished_at_unix_s": 1792472724.8193002,
-      "csv": "q3-test-d8-r3-cubic_96.45.41.167_30001.csv",
+      "csv": "tcp-traces/q3-test-d8-r3-cubic_96.45.41.167_30001/tcp-samples.csv",
       "actual_algorithm": "cubic"
     },
     {
@@ -845,7 +845,7 @@
       "run_id": "q3-test-d8-r3-reno",
       "started_at_unix_s": 1792472726.8240135,
       "finished_at_unix_s": 1792472787.6511,
-      "csv": "q3-test-d8-r3-reno_96.45.41.167_30001.csv",
+      "csv": "tcp-traces/q3-test-d8-r3-reno_96.45.41.167_30001/tcp-samples.csv",
       "actual_algorithm": "reno"
     }
   ],

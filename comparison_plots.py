@@ -129,10 +129,15 @@ def plot_comparison(runs, algorithms, destination, pdf, times_pdf, scatter_pdf):
 
 
 def build_report(manifest, runs, out: Path):
+    reports_dir = out / "reports"
+    plots_dir = out / "plots"
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    plots_dir.mkdir(parents=True, exist_ok=True)
+
     matched = set(manifest["selected_destinations"])
     rows = [dict(run_statistics(test, run), matched_destination=run[0].destination() in matched)
             for test, run in runs]
-    write_csv(out / "per-run-summary.csv", rows)
+    write_csv(reports_dir / "per-test-statistics.csv", rows)
     groups = defaultdict(list)
     for row in rows:
         if row["matched_destination"]:
@@ -147,7 +152,7 @@ def build_report(manifest, runs, out: Path):
                            "goodput_run_min_mbps": min(means), "goodput_run_max_mbps": max(means),
                            "rtt_run_mean_ms": fmean(rtts) if rtts else None,
                            "rtt_run_stddev_ms": stdev(rtts) if len(rtts) > 1 else 0})
-    write_csv(out / "aggregate-summary.csv", aggregates)
+    write_csv(reports_dir / "destination-algorithm-statistics.csv", aggregates)
     cfg = manifest["config"]
     paragraphs = [
         f"Completed matched destinations: {len(matched)}/{manifest['requested_destinations']}. "
@@ -225,8 +230,8 @@ def build_report(manifest, runs, out: Path):
         "and draft the algorithm design and explanatory text. The team must review the code, "
         "measurements, and claims and be able to explain them during evaluation.",
     ]
-    (out / "comparison-report.md").write_text("# Assignment 2 Q3(a)\n\n" + "\n\n".join(paragraphs) + "\n")
-    with PdfPages(out / "comparison-report.pdf") as pdf:
+    (reports_dir / "algorithm-comparison-report.md").write_text("# Assignment 2 Q3(a)\n\n" + "\n\n".join(paragraphs) + "\n")
+    with PdfPages(reports_dir / "algorithm-comparison-report.pdf") as pdf:
         text_pages(pdf, "Assignment 2 Q3(a): Algorithm comparison", paragraphs)
         for start in range(0, len(rows), 18):
             page_rows = rows[start:start + 18]
@@ -258,9 +263,9 @@ def build_report(manifest, runs, out: Path):
         representative = manifest["representative"]
         if representative:
             plot_comparison(runs, manifest["algorithms"], representative, pdf,
-                            out / "comparison-timeseries.pdf", out / "comparison-scatter.pdf")
+                            plots_dir / "algorithm-metrics-over-time.pdf", plots_dir / "algorithm-metrics-vs-goodput.pdf")
         design = Path(__file__).with_name("Q3_DESIGN.md")
         if design.exists():
             text_pages(pdf, "Assignment 2 Q3(b): Algorithm design", design.read_text().splitlines())
     for test, (meta, samples) in runs:
-        save_run_plots(meta, samples, out)
+        save_run_plots(meta, samples, out / "tcp-traces" / meta.slug())

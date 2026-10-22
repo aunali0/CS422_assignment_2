@@ -18,8 +18,8 @@ from matplotlib.patches import Rectangle
 from log_utils import log_message
 from measurement import RunMetadata, Sample
 
-GOODPUT_GRAPHS_NAME = "goodput-graphs.pdf"
-SUMMARY_TABLE_NAME = "goodput-summary.pdf"
+GOODPUT_GRAPHS_NAME = "destination-goodput-over-time.pdf"
+SUMMARY_TABLE_NAME = "destination-goodput-statistics.pdf"
 
 CWND_COLOR = "#2f6f9f"
 RTT_COLOR = "#0f766e"
@@ -187,8 +187,8 @@ def plot_scatter(meta: RunMetadata, samples: list[Sample], path: Path) -> None:
 def save_run_plots(meta: RunMetadata, samples: list[Sample], out_dir: Path) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    plot_time_series(meta, samples, out_dir / f"{meta.slug()}-timeseries.pdf")
-    plot_scatter(meta, samples, out_dir / f"{meta.slug()}-scatter.pdf")
+    plot_time_series(meta, samples, out_dir / "tcp-metrics-over-time.pdf")
+    plot_scatter(meta, samples, out_dir / "tcp-metrics-vs-goodput.pdf")
 
 
 def plot_destinations(runs: list[Run], path: Path) -> None:

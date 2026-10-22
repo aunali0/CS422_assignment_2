@@ -1,10 +1,9 @@
 import resource
-from contextlib import contextmanager
-from collections.abc import Iterator
 import secrets
 import socket
 import time
-from contextlib import nullcontext
+from collections.abc import Iterator
+from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from json import JSONDecodeError
 

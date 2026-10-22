@@ -10,16 +10,16 @@ The iperf3 binary is never invoked; the client talks to standard public iperf3 s
 
 ## Assignment 2 Q3
 
-**Open [Q3_REPORT.pdf](Q3_REPORT.pdf) for the five-page Q3 report.**
+**Open [reviewed-algorithm-comparison.pdf](results/algorithm-comparisons/q3-test/reports/reviewed-algorithm-comparison.pdf) for the five-page Q3 report.**
 
 See [Q3_RUN.md](Q3_RUN.md) for the CUBIC/Reno/BBR experiment and Docker commands,
 outputs, and submission steps. [Q3_DESIGN.md](Q3_DESIGN.md) contains the proposed
-algorithm and Assignment 3 handoff. The completed measurements are in `results/q3-test/`; the reviewed report is
-[Q3_REPORT.pdf](Q3_REPORT.pdf).
+algorithm and Assignment 3 handoff. The completed measurements are in `results/algorithm-comparisons/q3-test/`; the reviewed report is
+[reviewed-algorithm-comparison.pdf](results/algorithm-comparisons/q3-test/reports/reviewed-algorithm-comparison.pdf).
 
 ```sh
 python main.py compare -s iperf3-servers.csv -c 10 -t 60 -g 1 -r 3 --run-id q3-final
-python main.py analyze --manifest results/q3-final/manifest.json
+python main.py analyze --manifest results/algorithm-comparisons/q3-final/manifest.json
 ```
 
 ## Requirements
@@ -91,17 +91,33 @@ Run `python main.py test --help` for the full list.
 
 ## Output
 
-Everything lands in `results/` (or `--out-dir`), named
-`<run-id>_<host>_<port>`:
+Each command groups experiments by purpose under `results/` (or `--out-dir`):
+
+| Command | Experiment directory |
+| --- | --- |
+| `test` | `single-server-tests/<run-id>/` — individual Q1/Q2 TCP tests |
+| `destinations` | `destination-tests/<run-id>/` — destination goodput and representative TCP traces |
+| `compare` | `algorithm-comparisons/<run-id>/` — repeated Q3 algorithm comparisons |
+
+Within each experiment:
 
 | File | Contents |
 | --- | --- |
-| `*.csv` | One row per sample, 73 columns: goodput, interval deltas, and every decoded `tcp_info` field (`tcpi_*`) |
-| `*.json` | Run metadata — destination, algorithm, kernel, sampling interval, and the **unit of every CSV column** |
-| `*-timeseries.pdf` | Q2(b)(i): `snd_cwnd`, RTT, loss proxy, and goodput against time |
-| `*-scatter.pdf` | Q2(b)(ii): `snd_cwnd`, RTT, and loss signal each against goodput |
-| `goodput-graphs.pdf` | Q1: goodput over time, one panel per destination |
-| `goodput-summary.pdf` | Q1: min / median / mean / 95th-percentile goodput per destination |
+| `tcp-traces/<test>/tcp-samples.csv` | One row per sample, 73 columns: goodput, interval deltas, and every decoded `tcp_info` field (`tcpi_*`) |
+| `tcp-traces/<test>/test-metadata.json` | Run metadata — destination, algorithm, kernel, sampling interval, and the **unit of every CSV column** |
+| `tcp-traces/<test>/tcp-metrics-over-time.pdf` | Q2(b)(i): `snd_cwnd`, RTT, loss proxy, and goodput against time |
+| `tcp-traces/<test>/tcp-metrics-vs-goodput.pdf` | Q2(b)(ii): `snd_cwnd`, RTT, and loss signal each against goodput |
+| `plots/destination-goodput-over-time.pdf` | Q1: goodput over time, one panel per destination |
+| `reports/destination-goodput-statistics.pdf` | Q1: min / median / mean / 95th-percentile goodput per destination |
+| `plots/algorithm-metrics-over-time.pdf` and `plots/algorithm-metrics-vs-goodput.pdf` | Algorithms and repetitions at the same representative destination |
+| `reports/algorithm-comparison-report.*` | Full comparison report, plots, statistics, and algorithm design |
+| `reports/per-test-statistics.csv` | Statistics for every successful test, including incomplete destination groups |
+| `reports/destination-algorithm-statistics.csv` | Statistics across repetitions for each matched destination and algorithm |
+| `reports/reviewed-algorithm-comparison.pdf` | Concise reviewed Q3 report; its figures are under `plots/reviewed-report-figures/` |
+
+Each test folder includes its run ID, destination, and, for comparisons, repetition and algorithm.
+The October 5 goodput PDFs are preserved in `results/destination-tests/20261005/`;
+matching raw samples are not available in this repository.
 
 The `destinations` run also picks a **representative destination** — the one with the
 highest median goodput, least likely to have been throttled — and emits the two Q2 plots
@@ -145,7 +161,7 @@ that is `cubic`.
 
 ```bash
 ls results/
-head -1 results/*.csv | tr ',' '\n' | head -20     # column names
+head -1 results/single-server-tests/*/tcp-traces/*/tcp-samples.csv | tr ',' '\n' | head -20
 ```
 
 To confirm the decoder against the kernel, start a run and in a second shell compare:

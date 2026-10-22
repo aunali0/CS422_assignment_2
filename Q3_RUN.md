@@ -2,7 +2,7 @@
 
 Implemented: algorithm selection before data-socket connect, repeated matched experiments, raw CSV/JSON, common-scale comparison plots, summary tables, a generated report, and algorithm pseudocode in Q3_DESIGN.md.
 
-The full comparison has now been run by a teammate on Linux/WSL2 and imported from res.zip. The checked dataset is results/q3-test: three destinations, three algorithms, three repetitions, 60 seconds per run, and one-second sampling. All 27 matched runs completed. See [the five-page Q3 report](Q3_REPORT.pdf) and [its editable text](Q3_REPORT.md). Q3_REPORT.pdf is at the top of the repo and includes implementation links, the two required plot pages, analysis, and the algorithm design. Merge it with the team's Q1/Q2 report for the single assignment submission.
+The full comparison has now been run by a teammate on Linux/WSL2 and imported from res.zip. The checked dataset is results/algorithm-comparisons/q3-test: three destinations, three algorithms, three repetitions, 60 seconds per run, and one-second sampling. All 27 matched runs completed. See [the five-page Q3 report](results/algorithm-comparisons/q3-test/reports/reviewed-algorithm-comparison.pdf) and [its editable text](Q3_REPORT.md). The PDF is in results/algorithm-comparisons/q3-test/reports/ and includes implementation links, the two required plot pages, analysis, and the algorithm design. Merge it with the team's Q1/Q2 report for the single assignment submission.
 
 ## Run on Linux or WSL2
 
@@ -32,25 +32,25 @@ The Dockerfile uses ubuntu:24.04 and Python 3.12. No privileged container is nee
 
 ## Files produced
 
-Everything is under results/q3-final/:
+Everything is under results/algorithm-comparisons/q3-final/:
 
 - manifest.json: kernel, Python and library versions, configuration, candidate selection, actual algorithms, exact execution order, timestamps, statuses, and complete destination groups.
 - servers-input.csv and experiment.log: input list and diagnostics.
-- Per-test CSV/JSON: raw measurements, actual algorithm, kernel, units, and run ID. Successful runs are saved immediately.
-- per-run-summary.csv: goodput min/median/mean/P95, duration-weighted goodput, RTT mean/P95, cwnd, an observed-rate BDP proxy, and retransmissions.
-- aggregate-summary.csv: mean, sample standard deviation, and range across repetitions for matched destination/algorithm groups.
-- comparison-timeseries.pdf and comparison-scatter.pdf: all algorithms on the same representative destination, including repetitions, with common scales for each metric.
-- comparison-report.pdf and comparison-report.md: method, measured summaries, interpretation, limitations, and AI acknowledgement. The PDF also includes the Q3(b) design and the comparison plots.
-- Individual per-test plots and goodput panels for every complete destination in the report.
+- tcp-traces/<test>/: per-test CSV/JSON and individual plots. Raw measurements include the actual algorithm, kernel, units, and run ID. Successful runs are saved immediately.
+- reports/per-test-statistics.csv: goodput min/median/mean/P95, duration-weighted goodput, RTT mean/P95, cwnd, an observed-rate BDP proxy, and retransmissions.
+- reports/destination-algorithm-statistics.csv: mean, sample standard deviation, and range across repetitions for matched destination/algorithm groups.
+- plots/algorithm-metrics-over-time.pdf and plots/algorithm-metrics-vs-goodput.pdf: all algorithms on the same representative destination, including repetitions, with common scales for each metric.
+- reports/algorithm-comparison-report.pdf and reports/algorithm-comparison-report.md: method, measured summaries, interpretation, limitations, and AI acknowledgement. The PDF also includes the Q3(b) design, goodput panels for every complete destination, and the comparison plots.
+- reports/reviewed-algorithm-comparison.pdf and plots/reviewed-report-figures/: the reviewed report and its supporting plots, when reviewed analysis is available.
 
 A failed candidate is replaced as a whole after its planned tests finish. Partial successful data are retained and marked as unmatched, and excluded from aggregate comparisons. The maximum candidate count is `count * attempts`. A nonzero exit status reports a destination shortfall; inspect the manifest and log. An interrupted run retains measurements and running/pending statuses; use a fresh run ID to rerun, or analyze what was saved. It does not resume incomplete runs automatically.
 
 The initial algorithm order is seeded and shuffled, then rotated across repetitions and destinations. With three repetitions each algorithm appears once in each order position per destination. With other repetition counts balancing may be incomplete. The first destination that completes every test is the representative, avoiding selection by which algorithm won.
 
-Rebuild the submitted plots and reports without network traffic, including on macOS (observations.md in the run directory supplies the reviewed analysis):
+Rebuild the submitted plots and reports without network traffic, including on macOS (the reviewed report text is in Q3_REPORT.md):
 
 ```sh
-python main.py analyze --manifest results/q3-test/manifest.json
+python main.py analyze --manifest results/algorithm-comparisons/q3-test/manifest.json
 ```
 
 ## Handoff and submission
@@ -71,4 +71,4 @@ Review measured differences relative to run variability. Add any trace-specific 
 python -m unittest discover -s tests -v
 ```
 
-Tests check pre-connect algorithm selection, rejection of unavailable/mismatched algorithms, whole-group replacement, balanced order, acknowledged-byte goodput, and offline report generation using existing measurements. Tests use mocked network operations; they do not demonstrate live iperf3 compatibility on Linux. The imported live three-algorithm results passed the checks recorded in results/q3-test/validation.json. The Docker build remains unverified; the supplied run manifest does not record whether Docker was used.
+Tests check pre-connect algorithm selection, rejection of unavailable/mismatched algorithms, whole-group replacement, balanced order, acknowledged-byte goodput, and offline report generation using existing measurements. Tests use mocked network operations; they do not demonstrate live iperf3 compatibility on Linux. The imported live three-algorithm results passed the checks recorded in results/algorithm-comparisons/q3-test/validation.json. The Docker build remains unverified; the supplied run manifest does not record whether Docker was used.

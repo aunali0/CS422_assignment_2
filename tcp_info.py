@@ -19,7 +19,6 @@
 import socket
 import struct
 
-
 # (name, struct format code), in kernel declaration order.
 TCP_INFO_FIELDS: tuple[tuple[str, str], ...] = (
     ("state", "B"),
@@ -166,10 +165,12 @@ def build_layout() -> tuple[tuple[str, str, int], ...]:
 
     return tuple(layout)
 
+
 TCP_INFO_LAYOUT = build_layout()
 
 assert STRUCT_SIZE == 248, f"unexpected tcp_info size: {STRUCT_SIZE}"
 assert set(TCP_INFO_UNITS) == {name for name, _ in TCP_INFO_FIELDS}, "units table out of sync"
+
 
 def parse_tcp_info(data: bytes) -> TcpInfo:
     info: TcpInfo = {}
@@ -180,15 +181,19 @@ def parse_tcp_info(data: bytes) -> TcpInfo:
 
     return info
 
+
 def get_tcp_info_bytes(sock: socket.socket) -> bytes:
     return sock.getsockopt(socket.IPPROTO_TCP, socket.TCP_INFO, REQUEST_SIZE)
+
 
 def get_tcp_info(sock: socket.socket) -> TcpInfo:
     return parse_tcp_info(get_tcp_info_bytes(sock))
 
+
 def get_tcp_algorithm(sock: socket.socket) -> str:
     name = sock.getsockopt(socket.IPPROTO_TCP, socket.TCP_CONGESTION, TCP_CONGESTION_NAME_SIZE)
     return name.split(b"\x00", 1)[0].decode("ascii")
+
 
 def field_delta(curr: TcpInfo, prev: TcpInfo, name: str) -> int | None:
     after, before = curr[name], prev[name]

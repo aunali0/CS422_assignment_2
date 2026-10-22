@@ -12,12 +12,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from client import ClientConfig, TestResult, data_connection
 from comparison import load_run, preflight, run_comparison
 from comparison_plots import build_report, percentile, run_statistics, plot_comparison
+from destinations import Server, run_destinations
 import matplotlib.pyplot as plt
 from reviewed_report import build_reviewed_report
 from dataclasses import replace
 
 ROOT = Path(__file__).resolve().parents[1]
-BASELINE = ROOT / "results/20261018T035817Z_185.180.12.40_5201.csv"
+BASELINE = ROOT / (
+    "results/algorithm-comparisons/q3-test/tcp-traces/"
+    "q3-test-d1-r1-cubic_dal.speedtest.clouvider.net_5200/"
+    "tcp-samples.csv"
+)
 CFG = ClientConfig(15, 5, .5, 5, 3, 3)
 
 
@@ -93,7 +98,7 @@ class ComparisonTests(unittest.TestCase):
                 "comparison.try_run_test", side_effect=runner
             ), patch("comparison.time.sleep"), patch("comparison.analyze_manifest"):
                 self.assertTrue(run_comparison(args, CFG, "test"))
-            manifest = json.loads((out / "test/manifest.json").read_text())
+            manifest = json.loads((out / "algorithm-comparisons/test/manifest.json").read_text())
             self.assertEqual(len(calls), 18)
             self.assertEqual(len(manifest["selected_destinations"]), 1)
             self.assertNotEqual(manifest["selected_destinations"][0], f"{calls[0][0]}:5201")
@@ -102,8 +107,20 @@ class ComparisonTests(unittest.TestCase):
                 for position in range(3):
                     self.assertEqual({calls[offset + rep * 3 + position][1] for rep in range(3)},
                                      {"cubic", "reno", "bbr"})
-            self.assertTrue(all((out / "test" / t["csv"]).exists()
+            self.assertTrue(all((out / "algorithm-comparisons/test" / t["csv"]).exists()
                                 for t in manifest["tests"] if t["status"] == "ok"))
+            self.assertTrue(all(Path(t["csv"]).parts[0] == "tcp-traces"
+                                for t in manifest["tests"] if t["status"] == "ok"))
+
+    def test_failed_destinations_create_output_and_reject_duplicate_run(self):
+        with tempfile.TemporaryDirectory() as directory:
+            out = Path(directory) / "missing" / "results"
+            with patch("destinations.try_run_test", return_value=None) as runner:
+                run_destinations([Server("unreachable.test", 5201)], 1, 1, CFG, "failed", out)
+                self.assertGreater((out / "destination-tests/failed/reports/destination-goodput-statistics.pdf").stat().st_size, 100)
+                with self.assertRaisesRegex(SystemExit, "Choose a fresh --run-id"):
+                    run_destinations([Server("unreachable.test", 5201)], 1, 1, CFG, "failed", out)
+                runner.assert_called_once()
 
     def test_offline_report_uses_saved_measurements(self):
         meta, samples = load_run(BASELINE)
@@ -120,14 +137,15 @@ class ComparisonTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             out = Path(directory)
             build_report(manifest, runs, out)
-            for name in ("comparison-report.pdf", "comparison-timeseries.pdf",
-                         "comparison-scatter.pdf", "per-run-summary.csv", "aggregate-summary.csv"):
+            for name in ("reports/algorithm-comparison-report.pdf", "plots/algorithm-metrics-over-time.pdf",
+                         "plots/algorithm-metrics-vs-goodput.pdf", "reports/per-test-statistics.csv",
+                         "reports/destination-algorithm-statistics.csv"):
                 self.assertGreater((out / name).stat().st_size, 100)
-            self.assertIn("cubic", (out / "comparison-report.md").read_text())
+            self.assertIn("cubic", (out / "reports/algorithm-comparison-report.md").read_text())
             (out / "observations.md").write_text("# Test report\n\nOffline fixture only.")
             build_reviewed_report(manifest, runs, out)
-            self.assertGreater((out / "Q3_REPORT.pdf").stat().st_size, 100)
-            self.assertTrue((out / "supporting/representative-timeseries.pdf").exists())
+            self.assertGreater((out / "reports/reviewed-algorithm-comparison.pdf").stat().st_size, 100)
+            self.assertTrue((out / "plots/reviewed-report-figures/algorithm-metrics-over-time.pdf").exists())
 
     def test_common_axes_include_later_algorithms(self):
         meta, samples = load_run(BASELINE)
@@ -171,8 +189,8 @@ class ComparisonTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             out = Path(directory)
             build_report(manifest, [({"repetition": 1}, run)], out)
-            self.assertIn("no measured CUBIC/Reno/BBR comparison", (out / "comparison-report.md").read_text())
-            self.assertFalse((out / "aggregate-summary.csv").exists())
+            self.assertIn("no measured CUBIC/Reno/BBR comparison", (out / "reports/algorithm-comparison-report.md").read_text())
+            self.assertFalse((out / "reports/destination-algorithm-statistics.csv").exists())
 
 
 if __name__ == "__main__":

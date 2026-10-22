@@ -6,10 +6,11 @@ from enum import IntEnum
 from string import ascii_lowercase
 from typing import Literal
 
-from log_utils import LogLevel, log_json, log_message
 from pydantic import BaseModel, ConfigDict, Field
 
-MAX_JSON_BYTES = 1024 ** 2
+from log_utils import LogLevel, log_json, log_message
+
+MAX_JSON_BYTES = 1024**2
 
 
 class State(IntEnum):
@@ -53,6 +54,15 @@ class IPerf3Test(BaseModel):
 def generate_cookie() -> bytes:
     cookie = "".join(secrets.choice(ascii_lowercase) for _ in range(36))
     return cookie.encode("ascii") + b"\x00"
+
+
+def format_as_state(value: int) -> str:
+    try:
+        name = State(value).name
+    except ValueError:
+        name = "UNKNOWN"
+
+    return f"{name} ({value:#04x})"
 
 
 def receive_state(sock: socket.socket, expected: State, level: LogLevel) -> None:
@@ -122,12 +132,3 @@ def send_json(sock: socket.socket, payload: dict[str, object], level: LogLevel) 
     len_bytes = len(payload_bytes).to_bytes(4)
     sock.sendall(len_bytes + payload_bytes)
     log_json(level, "Sent", payload)
-
-
-def format_as_state(value: int) -> str:
-    try:
-        name = State(value).name
-    except ValueError:
-        name = "UNKNOWN"
-
-    return f"{name} ({value:#04x})"
