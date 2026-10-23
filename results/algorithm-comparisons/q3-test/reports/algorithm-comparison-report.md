@@ -1,4 +1,4 @@
-# Assignment 2 Q3(a)
+# TCP congestion control comparison
 
 Completed matched destinations: 3/3. Requested algorithms: cubic, reno, bbr. Repetitions per algorithm: 3. Duration: 60 s. Sampling: 1.0 s. Seed: 422. Host kernel: 6.18.33.2-microsoft-standard-WSL2.
 
