@@ -1,5 +1,4 @@
 import argparse
-from argparse import ArgumentParser
 from math import isfinite
 from pathlib import Path
 

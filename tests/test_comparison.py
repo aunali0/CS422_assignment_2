@@ -131,7 +131,8 @@ class ComparisonTests(unittest.TestCase):
         manifest = {
             "selected_destinations": [meta.destination()], "requested_destinations": 1,
             "representative": meta.destination(), "algorithms": algorithms,
-            "repetitions": 3, "config": {"duration": 15, "goodput_interval": .5},
+            "repetitions": 3, "config": {"duration": meta.duration,
+                                       "goodput_interval": meta.goodput_interval},
             "seed": 422, "environment": {"kernel": meta.kernel}, "order_method": "test fixture",
         }
         with tempfile.TemporaryDirectory() as directory:
@@ -189,7 +190,7 @@ class ComparisonTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             out = Path(directory)
             build_report(manifest, [({"repetition": 1}, run)], out)
-            self.assertIn("no measured CUBIC/Reno/BBR comparison", (out / "reports/algorithm-comparison-report.md").read_text())
+            self.assertIn("no measured algorithm comparison", (out / "reports/algorithm-comparison-report.md").read_text())
             self.assertFalse((out / "reports/destination-algorithm-statistics.csv").exists())
 
 

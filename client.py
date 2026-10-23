@@ -42,7 +42,7 @@ class ClientConfig:
     algorithm: str | None = None
 
 
-@dataclass
+@dataclass(frozen=True)
 class TestResult:
     metadata: RunMetadata
     samples: list[Sample]

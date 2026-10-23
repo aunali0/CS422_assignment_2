@@ -5,7 +5,7 @@ from textwrap import wrap
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
-from comparison_plots import plot_comparison, run_statistics
+from comparison_plots import matched_destinations, plot_comparison, run_statistics
 
 
 def sections(document):
@@ -29,9 +29,12 @@ def page(title, number):
 
 def prose(fig, text, y, *, size=10.5, spacing=0.018, bottom=0.04):
     for paragraph in text.split("\n\n"):
-        code = paragraph.startswith("State:")
+        code = paragraph.startswith(("State:", "```"))
+        source_lines = paragraph.splitlines()
+        if paragraph.startswith("```"):
+            source_lines = source_lines[1:-1]
         lines = []
-        for line in paragraph.splitlines():
+        for line in source_lines:
             indent = len(line) - len(line.lstrip())
             lines.extend(wrap(line, width=85, subsequent_indent=" " * indent) or [""])
         for line in lines:
@@ -78,6 +81,12 @@ class PlotPages:
 
 
 def build_reviewed_report(manifest, runs, out: Path, report_path: Path | None = None):
+    report_path = report_path or out / "reports" / "reviewed-algorithm-comparison.pdf"
+    destinations = matched_destinations(manifest, runs)
+    # This template embeds Assignment 2's reviewed prose, not new experiment conclusions.
+    if set(manifest["algorithms"]) != {"cubic", "reno", "bbr"} or not destinations:
+        report_path.unlink(missing_ok=True)
+        return
     if not (out / "observations.md").exists():
         return
     source = Path(__file__).with_name("Q3_REPORT.md")
@@ -85,18 +94,17 @@ def build_reviewed_report(manifest, runs, out: Path, report_path: Path | None = 
     matched = [
         (test, run)
         for test, run in runs
-        if run[0].destination() in manifest["selected_destinations"]
+        if run[0].destination() in destinations
     ]
     rows = [run_statistics(test, run) for test, run in matched]
     support = out / "plots" / "reviewed-report-figures"
     support.mkdir(parents=True, exist_ok=True)
-    report_path = report_path or out / "reports" / "reviewed-algorithm-comparison.pdf"
     report_path.parent.mkdir(parents=True, exist_ok=True)
     with PdfPages(report_path) as pdf:
         fig = page("3(a): Compare CUBIC, Reno, and BBR", 1)
         prose(fig, text["Method"], 0.90, bottom=0.49)
         table_rows = []
-        for index, destination in enumerate(manifest["selected_destinations"], 1):
+        for index, destination in enumerate(destinations, 1):
             for algorithm in manifest["algorithms"]:
                 group = [
                     row
@@ -131,7 +139,7 @@ def build_reviewed_report(manifest, runs, out: Path, report_path: Path | None = 
             if row == 0:
                 cell.set_facecolor("#edf0f4")
                 cell.get_text().set_weight("bold")
-        for index, destination in enumerate(manifest["selected_destinations"], 1):
+        for index, destination in enumerate(destinations, 1):
             fig.text(
                 0.075,
                 0.225 - (index - 1) * 0.018,
@@ -193,7 +201,7 @@ def build_reviewed_report(manifest, runs, out: Path, report_path: Path | None = 
         plot_comparison(
             matched,
             manifest["algorithms"],
-            manifest["representative"],
+            manifest["representative"] if manifest["representative"] in destinations else destinations[0],
             PlotPages(pdf),
             support / "algorithm-metrics-over-time.pdf",
             support / "algorithm-metrics-vs-goodput.pdf",

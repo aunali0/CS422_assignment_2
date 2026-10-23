@@ -2,107 +2,132 @@
 
 ## Method
 
-We compared CUBIC, Reno, and BBR at three destinations, using three 60-second runs per algorithm and one-second
-sampling: 27 matched runs. Each algorithm was set on the data socket before connecting, read back, and recorded. The
-host ran Linux 6.18.33.2-microsoft-standard-WSL2 and Python 3.14.8. Its recorded library versions were matplotlib 3.11.2
-and pydantic 2.13.5.
+We compared CUBIC, Reno, and BBR at three destinations. Each algorithm had three
+60-second runs per destination, sampled once per second: 27 matched runs. We selected
+each algorithm before connecting the data socket and recorded the name read back from
+it. The host used Linux 6.18.33.2-microsoft-standard-WSL2, Python 3.14.8, matplotlib
+3.11.2, and pydantic 2.13.5.
 
-Destinations were shuffled with seed 422. Algorithm order rotated across repetitions, placing each algorithm first,
-second, and third once per destination. Dallas used BBR/CUBIC/Reno, CUBIC/Reno/BBR, then Reno/BBR/CUBIC; Netfiber and
-the IP destination began with the second and third orders, respectively. Tests ran sequentially with a two-second pause.
-Dallas was the first complete group and became the representative without selecting by throughput. Five incomplete
-destination groups were excluded; their partial measurements and all failures remain in the logs.
+We shuffled destinations with seed 422 and rotated the algorithm order. Dallas used
+BBR/CUBIC/Reno, CUBIC/Reno/BBR, then Reno/BBR/CUBIC. The other two destinations
+started with the second and third orders. Tests ran sequentially with a two-second
+pause. Dallas was the first complete group and became the representative. Five
+incomplete groups were excluded from comparisons; their successful runs and failures
+remain saved.
 
-Goodput uses changes in acknowledged bytes divided by actual elapsed time. Algorithm means average three
-duration-weighted run means; ± values are sample standard deviations across runs. RTT is the mean sampled smoothed RTT.
-Retransmission totals are a loss proxy, not packet-loss probabilities. The CSV summaries additionally provide per-run
-minimum, median, arithmetic mean, and linearly interpolated P95 goodput.
+Goodput is acknowledged bytes divided by actual elapsed time, converted to Mbit/s.
+Each algorithm mean averages its three run rates; ± shows their sample standard
+deviation. RTT is the average sampled smoothed RTT. Retransmissions indicate possible
+loss, not an exact loss probability. Per-test tables also give minimum, median, mean,
+and P95 goodput; P95 uses linear interpolation.
 
 ## Observations
 
-Dallas: Reno delivered 281.30 Mbit/s, CUBIC 273.96, and BBR 269.79. BBR had the lowest mean RTT (64.53 ms), while Reno
-had the highest (73.65 ms). Thus Reno's modest throughput advantage came with higher measured delay. Reno's median cwnd
-rose from 1,982 to 7,854 segments across repetitions while throughput stayed near 279–284 Mbit/s. A larger window budget
-did not yield proportionally more delivery. Minimum filtered RTT was about 29–32 ms; higher observed RTT is consistent
-with queueing or other variable delay, including reverse-path delay.
+Congestion window (cwnd) limits how much data the sender may have outstanding. RTT
+measures the delay before acknowledgements return. Retransmissions show data being
+sent again. Together, these help explain why a larger window may not produce higher
+goodput.
 
-Netfiber: With minimum RTT around 170–174 ms, Reno and CUBIC achieved similar throughput (119.07 versus 118.08 Mbit/s).
-Their difference was small relative to CUBIC's run variation. BBR averaged 106.59 Mbit/s and slightly lower RTT. Its
-third run delivered only 86.57 Mbit/s with 396 retransmissions, compared with 115.56 and 117.63 Mbit/s in its first two
-runs. RTT stayed close to baseline during much of the slowdown, showing why a loss signal is useful alongside RTT.
+Dallas: Reno averaged 281.30 Mbit/s, CUBIC 273.96, and BBR 269.79. BBR had the lowest
+mean RTT, 64.53 ms; Reno had the highest, 73.65 ms. Reno's median cwnd grew from
+1,982 to 7,854 segments across runs, but goodput stayed near 279–284 Mbit/s. The
+extra window did not produce a similar increase in delivery.
 
-IP destination: Reno and CUBIC were effectively tied (163.52 versus 163.12 Mbit/s), with run standard deviations of
-11.80 and 17.51 Mbit/s. BBR averaged 147.47 Mbit/s and had more variable RTT. In its first run, the interval at about 50
-seconds had zero acknowledged goodput and a 1,559.64 ms RTT, with retransmissions increasing. The transfer still
-completed. This stall contributes to the averages; it was not removed as an outlier.
+Netfiber: Reno and CUBIC were close at 119.07 and 118.08 Mbit/s, with mean RTTs near
+182 ms. BBR had slightly lower RTT but averaged 106.59 Mbit/s. Its third run fell to
+86.57 Mbit/s and recorded 396 retransmissions. RTT remained near baseline during much
+of the slowdown, so RTT alone would not describe this problem.
 
-Across these paths, Reno had the highest mean throughput, BBR had lower mean RTT on two paths, and neither CUBIC nor BBR
-established a throughput win. These are observed operating regimes, not universal rankings. Reno's additive growth [1],
-CUBIC's faster growth on suitable large-bandwidth-delay paths [2], and BBR's bandwidth/RTT model [3] explain their
-intended behavior, but do not prove what caused differences between sequential Internet tests.
+IP destination: Reno and CUBIC were almost tied at 163.52 and 163.12 Mbit/s. Their
+run standard deviations were 11.80 and 17.51 Mbit/s, much larger than the difference
+between their means. BBR averaged 147.47 Mbit/s. Around 50 seconds into its first
+run, one interval had zero goodput and RTT reached 1,559.64 ms. The transfer
+completed, and we kept this stall in the statistics.
 
-For a window-limited flow, rate is approximately cwnd × MSS / RTT. In Dallas's third Reno run, median window budget was
-about 11.37 MB, versus a 1.09 MB achieved-rate × minimum-RTT proxy. The proxy is not an independent bottleneck-capacity
-estimate, and cwnd is not actual bytes in flight. Server limits, receiver windows, pacing, or path capacity can limit
-delivery. Public routes and cross-traffic changed between tests; rotating order cannot remove that variation. Three runs
-and one-second samples also limit conclusions. These single-flow tests do not establish fairness.
+Reno had the highest mean goodput on all three paths. BBR had lower mean RTT on
+Dallas and Netfiber. We did not observe a CUBIC or BBR throughput win. Reno grows its
+window additively [1], CUBIC uses a cubic growth rule [2], and BBR estimates delivery
+rate and baseline RTT [3]. These explain their intended behavior, but do not
+establish the cause of each measured difference.
+
+Bandwidth-delay product (BDP) is bandwidth × propagation RTT: roughly the data needed
+in flight to fill a path. We used achieved goodput × minimum RTT as an approximate
+comparison. Dallas's third Reno run allowed about 11.37 MB through cwnd, versus a
+1.09 MB rate × RTT estimate. A large window alone therefore did not explain
+throughput. This estimate does not independently measure path capacity; receiver or
+server limits may also matter.
+
+Public paths and traffic changed between tests. Three repetitions and one-second
+sampling give limited evidence, and small differences can reflect run variation.
+These single-flow experiments do not test fairness between competing flows.
 
 ## Design
 
-The proposed controller uses smoothed RTT, acknowledged goodput, and new loss-recovery events. Start with cwnd = 10
-segments and ssthresh = infinity; minimum cwnd is 2. Update once per RTT after ACK progress. Let base be the minimum
-valid RTT over 10 seconds, q = max (0, srtt/base − 1), and B be the maximum non-application-limited epoch goodput over
-10 seconds. Use seconds and bytes/s for BDP = max (2, B × base / MSS). Smooth goodput with rate = 0.75 × old_rate +
-0.25 × epoch_goodput. Initialize rate from the first valid epoch.
+Our proposed controller uses RTT, goodput, and loss. Q3_DESIGN.md gives the full
+specification. It has not been implemented or evaluated; the experiments above
+compare the three existing algorithms.
 
-State: cwnd = 10; mode = STARTUP; probe_age = 0
-On entering a new recovery episode, once per episode:
-cwnd = max (2, floor (0.70 * cwnd)); ssthresh = cwnd
-mode = AVOIDANCE; reset epoch and probe accounting
-On retransmission timeout, through the TCP stack:
-ssthresh = max (2, floor (cwnd / 2)); cwnd = 2
-mode = AVOIDANCE; reset epoch and probe accounting
+Start with cwnd = 10 segments and an unlimited slow-start threshold, subject to
+kernel limits. Keep the minimum valid RTT since connecting and the previous eligible
+interval's goodput. Make one normal window decision per RTT with new ACK progress.
+Goodput is newly acknowledged bytes divided by actual elapsed seconds.
+
+```text
+State: slow_start = true; previous_goodput = unset
+On a new loss-recovery episode, once:
+    request ssthresh = max(2, floor(cwnd / 2))
+    let Linux apply recovery using that threshold
+    slow_start = false; clear previous_goodput and interval accounting
+On timeout:
+    let Linux apply its normal timeout window and recovery
+    slow_start = true; clear previous_goodput and interval accounting
 Once per RTT with new ACKs, outside recovery:
-update base, BDP, q, rate; increment probe_age
-if app limited or receiver-window limited: hold; finish
-if mode == STARTUP and q < 0.10:
-cwnd += min (newly_acked_segments, cwnd); finish
-mode = AVOIDANCE
-if q > 0.25:
-cwnd = max (2, floor (0.90 * cwnd)); probe_age = 0
-else if q < 0.10:
-if cwnd < 1.25 * BDP or rate > 1.02 * old_rate:
-cwnd += 1
-else if probe_age >= 8:
-cwnd += 1; probe_age = 0
-otherwise hold; enforce kernel cwnd clamp
+    update minimum_RTT and measure goodput
+    if app limited or receiver-window limited:
+        clear previous_goodput; finish interval
+    if slow_start and cwnd < ssthresh and RTT <= 1.10 * minimum_RTT:
+        cwnd += min(newly_acked_segments, cwnd)
+    else:
+        slow_start = false
+        if RTT > 1.25 * minimum_RTT and previous_goodput is valid
+           and goodput <= previous_goodput:
+            cwnd = max(2, floor(0.90 * cwnd)); ssthresh = cwnd
+        else if RTT <= 1.10 * minimum_RTT:
+            cwnd += 1
+        else: hold cwnd
+    obey kernel limits; previous_goodput = goodput; finish interval
+```
 
-The Dallas window/rate mismatch motivates the throughput gate; Netfiber motivates a separate loss response; the IP-path
-stall motivates responding to delay inflation. The hold band and smoothing aim to reduce oscillation, and periodic
-probes avoid remaining at an underestimated rate. The thresholds are hypotheses, not tuned or validated results. The
-full specification in Q3_DESIGN.md defines recovery boundaries, fractional ACK accounting, and missing/limited-signal
-handling.
+Loss triggers a stronger response than delay. Low delay allows growth; high delay
+without better goodput causes a small reduction. This follows the window/rate
+mismatch at Dallas, retransmissions at Netfiber, and the IP-path stall. The 10% and
+25% delay thresholds and reduction factors are initial choices to test. Linux handles
+timeout recovery without an extra controller reduction.
 
-Assuming persistent flows, equal RTTs, and a shared bottleneck, additive growth and proportional reductions may
-encourage similar windows. Fairness and convergence are not guaranteed: unequal RTTs favor different update rates,
-delay-sensitive flows can yield to loss-based flows, and stale RTT/rate estimates can preserve unfair allocations.
-Probing may produce a limit cycle rather than a fixed rate. Assignment 3 must implement and evaluate the proposal; these
-baseline measurements do not evaluate it.
+With equal RTTs and a shared bottleneck, additive growth and loss reductions may help
+flows share capacity. Different RTTs and competing loss-based algorithms may cause
+unequal rates. Repeated changes can produce oscillation, so fairness and convergence
+remain unproven. A connection-wide minimum RTT cannot adapt upward after a route
+change, and interval goodput can be noisy.
 
 ## Reproduction
 
-Raw data, exact order, units, failures, and checked summaries: results/algorithm-comparisons/q3-test/. Run python main.py analyze --manifest
-results/algorithm-comparisons/q3-test/manifest.json to rebuild this report without network tests. To repeat collection, use compare -s
-iperf3-servers.csv -c 3 -t 60 -g 1 -r 3 --seed 422 with a fresh run ID. The Dockerfile uses ubuntu:24.04; the saved
-manifest does not establish whether Docker was used or identify the BBR version.
+Saved data and summaries are under results/algorithm-comparisons/q3-test/. Build
+outputs offline with python main.py analyze --manifest
+results/algorithm-comparisons/q3-test/manifest.json. Collection and Docker commands
+are in [Q3_RUN.md](Q3_RUN.md). The Dockerfile uses ubuntu:24.04; the recorded run
+does not establish whether Docker was used or which BBR version was installed.
+requirements.txt describes a different dependency environment from the saved
+experiment.
 
-Implementation: https://github.com/aunali0/CS422_assignment_2 . See client.py:data_connection, comparison.py:
-run_comparison, comparison_plots.py:plot_comparison/run_statistics, and reviewed_report.py for this PDF. The report
-includes clickable code links.
+Repository: https://github.com/aunali0/CS422_assignment_2 . Algorithm selection is in
+client.py:data_connection, experiment ordering in comparison.py:run_comparison,
+statistics and plots in comparison_plots.py, and PDF layout in reviewed_report.py.
+The PDF includes clickable implementation links.
 
 [1] https://www.rfc-editor.org/rfc/rfc5681.html#section-3.1
 [2] https://www.rfc-editor.org/rfc/rfc9438.html
 [3] https://github.com/google/bbr/blob/master/Documentation/bbr-faq.md
 
-AI assistance was used for automation, plotting, checking, and drafting the analysis and design. A teammate collected
-the measurements on Linux/WSL2.
+AI assistance helped with code, plots, checking, and report wording. A teammate
+collected the measurements on Linux/WSL2.

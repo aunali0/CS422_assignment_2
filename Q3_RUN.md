@@ -1,74 +1,105 @@
-# Assignment 2 Q3
+# Running the algorithm comparison
 
-Implemented: algorithm selection before data-socket connect, repeated matched experiments, raw CSV/JSON, common-scale comparison plots, summary tables, a generated report, and algorithm pseudocode in Q3_DESIGN.md.
+The saved Q3 experiment compares CUBIC, Reno, and BBR at three destinations, with
+three 60-second runs per algorithm and one-second sampling. All 27 matched runs
+completed. Data and outputs are under `results/algorithm-comparisons/q3-test/`.
 
-The full comparison has now been run by a teammate on Linux/WSL2 and imported from res.zip. The checked dataset is results/algorithm-comparisons/q3-test: three destinations, three algorithms, three repetitions, 60 seconds per run, and one-second sampling. All 27 matched runs completed. See [the five-page Q3 report](results/algorithm-comparisons/q3-test/reports/reviewed-algorithm-comparison.pdf) and [its editable text](Q3_REPORT.md). The PDF is in results/algorithm-comparisons/q3-test/reports/ and includes implementation links, the two required plot pages, analysis, and the algorithm design. Merge it with the team's Q1/Q2 report for the single assignment submission.
+Read [Q3_REPORT.md](Q3_REPORT.md) for the main report and
+[observations.md](results/algorithm-comparisons/q3-test/observations.md) for the
+results table and supporting notes. Existing PDFs contain the earlier report text;
+these Markdown sources have since been simplified.
 
-## Run on Linux or WSL2
+## Setup and collection
 
-Python 3.12 or newer is required. The Linux kernel must support cubic, reno, and bbr. The command checks all requested algorithms before contacting servers and fails if any is unavailable. It never silently substitutes an algorithm. The existing uv.lock required Python 3.14.7 and was removed when lowering the supported minimum to 3.12; requirements.txt pins the two direct dependencies used for local verification.
+Use Linux or WSL2 with Python 3.12 or newer. Follow the installation commands in
+[README.md](README.md). The host kernel must provide `cubic`, `reno`, and `bbr`.
+The client checks each algorithm before contacting servers and reports missing
+support. The host administrator may need to load `tcp_bbr` for BBR.
 
 ```sh
-cd CS422_assignment_2
-python3 -m venv .venv
-. .venv/bin/activate
-python -m pip install -r requirements.txt
-python main.py compare -s iperf3-servers.csv -c 10 -t 60 -g 1 -r 3 --seed 422 --run-id q3-final -o results
+python main.py compare -s iperf3-servers.csv -c 3 -t 60 -g 1 -r 3 --seed 422 --run-id q3-repeat -o results
 ```
 
-Ten destinations, three algorithms, and three repetitions take at least 90 minutes at 60 seconds each. Failures and replacements add time. A smaller configurable destination count is allowed by the assignment; `-c 3` takes at least 27 minutes. Use a fresh run ID for another experiment. For a smoke test, use a small server-list CSV with IP/HOST and PORT columns, `-c 1 -t 10 -r 1` and a separate run ID. Keep smoke tests separate from the final results.
+`-c` selects the destination count, `-t` the duration, `-g` the sampling interval,
+and `-r` the repetitions. Three destinations take at least 27 minutes of transfer
+time, plus pauses and retries. Use a fresh run ID for every experiment. The server
+CSV needs `IP/HOST` and `PORT` columns.
 
-If BBR is unavailable, the host owner may need to enable CONFIG_TCP_CONG_BBR or load the tcp_bbr module. The program does not change kernel configuration. Containers share the host kernel; installing packages in the container cannot add a missing host congestion-control algorithm. Record relevant host setup in the final report.
+All algorithms use the same destinations and settings. The runner shuffles the
+initial order, then rotates it by repetition and destination. With three algorithms
+and three repetitions, each algorithm occupies each position once per destination.
+The manifest records the exact order. A two-second pause separates tests.
 
-## Docker on the supported Linux host
+A destination is included in comparisons only if every algorithm and repetition
+succeeds. Failed groups are replaced within `count * attempts` candidates. Successful
+partial runs remain saved but are excluded from aggregate comparisons. Shortfalls
+produce a nonzero exit status. Interrupted runs can be analyzed but are not resumed.
+
+For a shorter check, use `-c 1 -t 10 -r 1` with a separate run ID.
+
+## Docker
 
 ```sh
 docker build -t cs422-a2 .
 mkdir -p results
-docker run --rm --network host -v "$PWD/results:/results" cs422-a2 compare -s iperf3-servers.csv -c 10 -t 60 -g 1 -r 3 --seed 422 --run-id q3-final -o /results
+docker run --rm --network host -v "$PWD/results:/results" cs422-a2 compare -s iperf3-servers.csv -c 3 -t 60 -g 1 -r 3 --seed 422 --run-id q3-docker -o /results
 ```
 
-The Dockerfile uses ubuntu:24.04 and Python 3.12. No privileged container is needed for selecting an available TCP algorithm. Docker Desktop on macOS is not the assignment's specified Linux/WSL2 execution environment. The image build could not be tested locally because the Docker daemon is stopped.
+The image uses `ubuntu:24.04` and Python 3.12. Containers share the host kernel,
+so the host must support the requested algorithms. The saved experiment used WSL2
+kernel `6.18.33.2-microsoft-standard-WSL2`, Python 3.14.8, matplotlib 3.11.2, and
+pydantic 2.13.5. `requirements.txt` pins a different dependency environment. The
+Docker pipeline remains unverified, and the saved manifest does not establish
+whether Docker was used or identify the BBR version.
 
-## Files produced
+## Outputs and offline analysis
 
-Everything is under results/algorithm-comparisons/q3-final/:
+Each experiment is under `results/algorithm-comparisons/<run-id>/`:
 
-- manifest.json: kernel, Python and library versions, configuration, candidate selection, actual algorithms, exact execution order, timestamps, statuses, and complete destination groups.
-- servers-input.csv and experiment.log: input list and diagnostics.
-- tcp-traces/<test>/: per-test CSV/JSON and individual plots. Raw measurements include the actual algorithm, kernel, units, and run ID. Successful runs are saved immediately.
-- reports/per-test-statistics.csv: goodput min/median/mean/P95, duration-weighted goodput, RTT mean/P95, cwnd, an observed-rate BDP proxy, and retransmissions.
-- reports/destination-algorithm-statistics.csv: mean, sample standard deviation, and range across repetitions for matched destination/algorithm groups.
-- plots/algorithm-metrics-over-time.pdf and plots/algorithm-metrics-vs-goodput.pdf: all algorithms on the same representative destination, including repetitions, with common scales for each metric.
-- reports/algorithm-comparison-report.pdf and reports/algorithm-comparison-report.md: method, measured summaries, interpretation, limitations, and AI acknowledgement. The PDF also includes the Q3(b) design, goodput panels for every complete destination, and the comparison plots.
-- reports/reviewed-algorithm-comparison.pdf and plots/reviewed-report-figures/: the reviewed report and its supporting plots, when reviewed analysis is available.
+| Location | Contents |
+| --- | --- |
+| `manifest.json` | Settings, host environment, order, status, and actual algorithms |
+| `servers-input.csv`, `experiment.log` | Input snapshot and failure details |
+| `tcp-traces/<test>/` | Raw samples, metadata with units, and individual plots |
+| `reports/per-test-statistics.csv` | Goodput, RTT, window, and retransmission statistics for every successful run |
+| `reports/destination-algorithm-statistics.csv` | Means and variation across matched repetitions |
+| `plots/algorithm-metrics-*.pdf` | Representative destination, all algorithms, common axis scales |
+| `reports/algorithm-comparison-report.*` | Generated detailed report and plots |
+| `reports/reviewed-algorithm-comparison.pdf` | Reviewed report, generated from `Q3_REPORT.md` when observations are present |
 
-A failed candidate is replaced as a whole after its planned tests finish. Partial successful data are retained and marked as unmatched, and excluded from aggregate comparisons. The maximum candidate count is `count * attempts`. A nonzero exit status reports a destination shortfall; inspect the manifest and log. An interrupted run retains measurements and running/pending statuses; use a fresh run ID to rerun, or analyze what was saved. It does not resume incomplete runs automatically.
-
-The initial algorithm order is seeded and shuffled, then rotated across repetitions and destinations. With three repetitions each algorithm appears once in each order position per destination. With other repetition counts balancing may be incomplete. The first destination that completes every test is the representative, avoiding selection by which algorithm won.
-
-Rebuild the submitted plots and reports without network traffic, including on macOS (the reviewed report text is in Q3_REPORT.md):
+The first complete destination is the representative; it is not selected for high
+throughput. To rebuild outputs from saved measurements without contacting servers:
 
 ```sh
 python main.py analyze --manifest results/algorithm-comparisons/q3-test/manifest.json
 ```
 
-## Handoff and submission
+This command overwrites the generated reports and plots. The current Markdown edits
+have not been rendered into the existing PDFs.
 
-Share Q3_DESIGN.md with whoever implements Assignment 3 before they choose the kernel/eBPF implementation. The design is a proposal, not an implemented kernel algorithm. It explicitly states its state, thresholds, RTT/throughput/loss updates, fairness expectations, and limitations. Revisit its thresholds after collecting all three baselines.
+## Assignment 3 and submission
 
-For Assignment 3 Option 1, after the custom algorithm has been implemented and loaded, the same runner can collect four-algorithm 10-second experiments:
+[Q3_DESIGN.md](Q3_DESIGN.md) is the selected Assignment 2 controller proposal and
+starting point for Assignment 3. The report sources and generator use this design.
+It has not been implemented or evaluated. Document any further implementation
+changes from the selected Assignment 2 design.
+
+Once a custom controller is implemented and loaded, collect four-algorithm tests:
 
 ```sh
 python main.py compare -s iperf3-servers.csv -c 3 -t 10 -g 0.2 -r 3 --algorithms cubic reno bbr CUSTOM_NAME --run-id a3-final -o results
 ```
 
-Review measured differences relative to run variability. Add any trace-specific anomalies and justified changes to the proposed design. Merge the Q3 report into the shared Assignment 2 report, include the repository URL and links to data_connection in client.py, run_comparison in comparison.py, and plot_comparison/build_report in comparison_plots.py, and embed the plots. The final Brightspace submission is one combined PDF. AI use is acknowledged once in the report, as the assignment requests.
+The rotating order still applies; three repetitions cannot fully balance four order
+positions. Record the actual order in the report. Review report wording and layout
+for four algorithms before submission.
 
-## Verification
+For Assignment 2, combine Q1/Q2 and Q3 into one PDF with the plots, interpretations,
+repository and code links, reproduction instructions, and a brief AI acknowledgement.
+The saved measurements have been checked against their summaries; see `validation.json`.
+Mocked tests cover algorithm selection and experiment handling. The test suite also
+includes offline report generation and writes temporary outputs:
 
 ```sh
 python -m unittest discover -s tests -v
 ```
-
-Tests check pre-connect algorithm selection, rejection of unavailable/mismatched algorithms, whole-group replacement, balanced order, acknowledged-byte goodput, and offline report generation using existing measurements. Tests use mocked network operations; they do not demonstrate live iperf3 compatibility on Linux. The imported live three-algorithm results passed the checks recorded in results/algorithm-comparisons/q3-test/validation.json. The Docker build remains unverified; the supplied run manifest does not record whether Docker was used.

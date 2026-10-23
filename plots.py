@@ -81,8 +81,8 @@ def plot_time_series(meta: RunMetadata, samples: list[Sample], path: Path) -> No
     ssthresh = values(samples, lambda s: s.info["snd_ssthresh"])
     cwnd_ax.plot(times, cwnd, color=CWND_COLOR, linewidth=1.5, label="snd_cwnd")
 
-    # ssthresh is 2**32-1 while the sender is in slow start; that would flatten the axis.
-    finite_ssthresh = [v if v < 2**31 else float("nan") for v in ssthresh]
+    # Linux uses 2**31-1 for an unlimited threshold; omit it to keep cwnd readable.
+    finite_ssthresh = [v if v < 2**31 - 1 else float("nan") for v in ssthresh]
     cwnd_ax.plot(
         times,
         finite_ssthresh,

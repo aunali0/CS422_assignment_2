@@ -5,8 +5,8 @@ from pathlib import Path
 from statistics import fmean, median, stdev
 from textwrap import wrap
 
-from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 
 from plots import Run, save_run_plots, style_axes, values
 
@@ -27,17 +27,24 @@ def run_statistics(test, run: Run):
     windows = [s.info["snd_cwnd"] for s in samples if s.info["snd_cwnd"] is not None]
     base_rtts = [s.info["min_rtt"] / 1000 for s in samples if s.info["min_rtt"]]
     base_rtt = min(base_rtts or rtts) if (base_rtts or rtts) else None
-    window_bytes = [s.info["snd_cwnd"] * s.info["snd_mss"] for s in samples
-                    if s.info["snd_cwnd"] is not None and s.info["snd_mss"] is not None]
+    window_bytes = [
+        s.info["snd_cwnd"] * s.info["snd_mss"]
+        for s in samples
+        if s.info["snd_cwnd"] is not None and s.info["snd_mss"] is not None
+    ]
     weighted_rate = sum(s.bytes_acked_delta for s in samples) / elapsed
     return {
-        "destination": meta.destination(), "algorithm": meta.algorithm,
-        "repetition": test["repetition"], "run_id": meta.run_id,
-        "goodput_min_mbps": min(goodput), "goodput_median_mbps": median(goodput),
-        "goodput_mean_mbps": fmean(goodput), "goodput_p95_mbps": percentile(goodput, .95),
+        "destination": meta.destination(),
+        "algorithm": meta.algorithm,
+        "repetition": test["repetition"],
+        "run_id": meta.run_id,
+        "goodput_min_mbps": min(goodput),
+        "goodput_median_mbps": median(goodput),
+        "goodput_mean_mbps": fmean(goodput),
+        "goodput_p95_mbps": percentile(goodput, 0.95),
         "goodput_weighted_mbps": sum(s.bytes_acked_delta for s in samples) * 8 / elapsed / 1e6,
         "rtt_mean_ms": fmean(rtts) if rtts else None,
-        "rtt_p95_ms": percentile(rtts, .95) if rtts else None,
+        "rtt_p95_ms": percentile(rtts, 0.95) if rtts else None,
         "base_rtt_ms": base_rtt,
         "cwnd_median_segments": median(windows) if windows else None,
         "window_median_bytes": median(window_bytes) if window_bytes else None,
@@ -48,6 +55,7 @@ def run_statistics(test, run: Run):
 
 def write_csv(path, rows):
     if not rows:
+        path.unlink(missing_ok=True)
         return
     with path.open("w", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
@@ -64,22 +72,67 @@ def text_pages(pdf, title, paragraphs):
         lines.append("")
     for start in range(0, max(1, len(lines)), 34):
         fig = plt.figure(figsize=(11.7, 8.3))
-        fig.text(.06, .94, title, fontsize=16, weight="bold", va="top")
-        fig.text(.06, .87, "\n".join(lines[start:start + 34]), fontsize=10, va="top",
-                 linespacing=1.35)
+        fig.text(0.06, 0.94, title, fontsize=16, weight="bold", va="top")
+        fig.text(
+            0.06,
+            0.87,
+            "\n".join(lines[start : start + 34]),
+            fontsize=10,
+            va="top",
+            linespacing=1.35,
+        )
         pdf.savefig(fig)
         plt.close(fig)
+
+
+def matched_destinations(manifest, runs):
+    expected = {
+        (algorithm, repetition)
+        for algorithm in manifest["algorithms"]
+        for repetition in range(1, manifest["repetitions"] + 1)
+    }
+    matched = []
+    for destination in manifest["selected_destinations"]:
+        group = [
+            (test, meta, samples)
+            for test, (meta, samples) in runs
+            if meta.destination() == destination
+        ]
+        keys = [(meta.algorithm, test["repetition"]) for test, meta, _ in group]
+        if len(keys) != len(expected) or set(keys) != expected:
+            continue
+        if all(
+            samples
+            and test.get("status", "ok") == "ok"
+            and meta.algorithm == test.get("requested_algorithm", meta.algorithm)
+            and meta.algorithm == test.get("actual_algorithm", meta.algorithm)
+            and meta.destination() == test.get("destination", meta.destination())
+            and meta.duration == manifest["config"]["duration"]
+            and meta.goodput_interval == manifest["config"]["goodput_interval"]
+            for test, meta, samples in group
+        ):
+            matched.append(destination)
+    return matched
 
 
 def plot_comparison(runs, algorithms, destination, pdf, times_pdf, scatter_pdf):
     selected = [(test, run) for test, run in runs if run[0].destination() == destination]
     colors = {name: plt.get_cmap("tab10")(i % 10) for i, name in enumerate(algorithms)}
-    metrics = [("Congestion window (segments)", lambda s: s.info["snd_cwnd"]),
-               ("RTT (ms)", lambda s: s.rtt_ms()),
-               ("Retransmitted segments / interval", lambda s: s.retrans_delta),
-               ("Goodput (Mbit/s)", lambda s: s.goodput)]
-    fig, axes = plt.subplots(4, len(algorithms), squeeze=False, figsize=(5 * len(algorithms), 12),
-                             sharey="row", sharex=True, layout="constrained")
+    metrics = [
+        ("Congestion window (segments)", lambda s: s.info["snd_cwnd"]),
+        ("RTT (ms)", lambda s: s.rtt_ms()),
+        ("Retransmitted segments / interval", lambda s: s.retrans_delta),
+        ("Goodput (Mbit/s)", lambda s: s.goodput),
+    ]
+    fig, axes = plt.subplots(
+        4,
+        len(algorithms),
+        squeeze=False,
+        figsize=(5 * len(algorithms), 12),
+        sharey="row",
+        sharex=True,
+        layout="constrained",
+    )
     fig.suptitle(f"{destination} | matched settings; individual repetitions")
     for col, algorithm in enumerate(algorithms):
         axes[0, col].set_title(algorithm)
@@ -87,10 +140,14 @@ def plot_comparison(runs, algorithms, destination, pdf, times_pdf, scatter_pdf):
             if meta.algorithm != algorithm:
                 continue
             for row, (label, pick) in enumerate(metrics):
-                axes[row, col].plot([s.time for s in samples], values(samples, pick),
-                                    color=colors[algorithm], alpha=.65,
-                                    linestyle=["-", "--", ":", "-."][(test["repetition"] - 1) % 4],
-                                    label=f"Run {test['repetition']}")
+                axes[row, col].plot(
+                    [s.time for s in samples],
+                    values(samples, pick),
+                    color=colors[algorithm],
+                    alpha=0.65,
+                    linestyle=["-", "--", ":", "-."][(test["repetition"] - 1) % 4],
+                    label=f"Run {test['repetition']}",
+                )
                 style_axes(axes[row, col])
         axes[0, col].legend(fontsize=8)
         axes[-1, col].set_xlabel("Time (s)")
@@ -99,11 +156,18 @@ def plot_comparison(runs, algorithms, destination, pdf, times_pdf, scatter_pdf):
         ax.set_ylim(bottom=0)
     for row, (label, _) in enumerate(metrics):
         axes[row, 0].set_ylabel(label)
-    fig.savefig(times_pdf, bbox_inches="tight", pad_inches=.15)
-    pdf.savefig(fig, bbox_inches="tight", pad_inches=.15)
+    fig.savefig(times_pdf, bbox_inches="tight", pad_inches=0.15)
+    pdf.savefig(fig, bbox_inches="tight", pad_inches=0.15)
     plt.close(fig)
-    fig, axes = plt.subplots(3, len(algorithms), squeeze=False, figsize=(5 * len(algorithms), 10),
-                             sharex="row", sharey=True, layout="constrained")
+    fig, axes = plt.subplots(
+        3,
+        len(algorithms),
+        squeeze=False,
+        figsize=(5 * len(algorithms), 10),
+        sharex="row",
+        sharey=True,
+        layout="constrained",
+    )
     fig.suptitle(f"{destination} | all repetitions; common scales per metric")
     for col, algorithm in enumerate(algorithms):
         axes[0, col].set_title(algorithm)
@@ -111,10 +175,15 @@ def plot_comparison(runs, algorithms, destination, pdf, times_pdf, scatter_pdf):
             if meta.algorithm != algorithm:
                 continue
             for row, (label, pick) in enumerate(metrics[:3]):
-                axes[row, col].scatter(values(samples, pick), [s.goodput for s in samples],
-                                       s=10, alpha=.4, color=colors[algorithm],
-                                       marker=["o", "x", "^", "s"][(test["repetition"] - 1) % 4],
-                                       label=f"Run {test['repetition']}")
+                axes[row, col].scatter(
+                    values(samples, pick),
+                    [s.goodput for s in samples],
+                    s=10,
+                    alpha=0.4,
+                    color=colors[algorithm],
+                    marker=["o", "x", "^", "s"][(test["repetition"] - 1) % 4],
+                    label=f"Run {test['repetition']}",
+                )
                 axes[row, col].set_xlabel(label)
                 style_axes(axes[row, col])
         axes[0, col].legend(fontsize=8)
@@ -123,8 +192,8 @@ def plot_comparison(runs, algorithms, destination, pdf, times_pdf, scatter_pdf):
         ax.set_ylim(bottom=0)
     for ax in axes[:, 0]:
         ax.set_ylabel("Goodput (Mbit/s)")
-    fig.savefig(scatter_pdf, bbox_inches="tight", pad_inches=.15)
-    pdf.savefig(fig, bbox_inches="tight", pad_inches=.15)
+    fig.savefig(scatter_pdf, bbox_inches="tight", pad_inches=0.15)
+    pdf.savefig(fig, bbox_inches="tight", pad_inches=0.15)
     plt.close(fig)
 
 
@@ -134,9 +203,11 @@ def build_report(manifest, runs, out: Path):
     reports_dir.mkdir(parents=True, exist_ok=True)
     plots_dir.mkdir(parents=True, exist_ok=True)
 
-    matched = set(manifest["selected_destinations"])
-    rows = [dict(run_statistics(test, run), matched_destination=run[0].destination() in matched)
-            for test, run in runs]
+    matched = matched_destinations(manifest, runs)
+    rows = [
+        dict(run_statistics(test, run), matched_destination=run[0].destination() in matched)
+        for test, run in runs
+    ]
     write_csv(reports_dir / "per-test-statistics.csv", rows)
     groups = defaultdict(list)
     for row in rows:
@@ -146,12 +217,19 @@ def build_report(manifest, runs, out: Path):
     for (destination, algorithm), group in groups.items():
         means = [r["goodput_weighted_mbps"] for r in group]
         rtts = [r["rtt_mean_ms"] for r in group if r["rtt_mean_ms"] is not None]
-        aggregates.append({"destination": destination, "algorithm": algorithm, "runs": len(group),
-                           "goodput_run_mean_mbps": fmean(means),
-                           "goodput_run_stddev_mbps": stdev(means) if len(means) > 1 else 0,
-                           "goodput_run_min_mbps": min(means), "goodput_run_max_mbps": max(means),
-                           "rtt_run_mean_ms": fmean(rtts) if rtts else None,
-                           "rtt_run_stddev_ms": stdev(rtts) if len(rtts) > 1 else 0})
+        aggregates.append(
+            {
+                "destination": destination,
+                "algorithm": algorithm,
+                "runs": len(group),
+                "goodput_run_mean_mbps": fmean(means),
+                "goodput_run_stddev_mbps": stdev(means) if len(means) > 1 else 0,
+                "goodput_run_min_mbps": min(means),
+                "goodput_run_max_mbps": max(means),
+                "rtt_run_mean_ms": fmean(rtts) if rtts else None,
+                "rtt_run_stddev_ms": stdev(rtts) if len(rtts) > 1 else 0,
+            }
+        )
     write_csv(reports_dir / "destination-algorithm-statistics.csv", aggregates)
     cfg = manifest["config"]
     paragraphs = [
@@ -171,40 +249,61 @@ def build_report(manifest, runs, out: Path):
         "RTT aggregates average the sampled smoothed RTT, not independent packet RTT observations.",
     ]
     if not matched:
-        paragraphs.append("No complete matched destination is available. There is no measured "
-                          "CUBIC/Reno/BBR comparison to interpret yet.")
-    for destination in manifest["selected_destinations"]:
+        paragraphs.append(
+            "No complete matched destination is available. There is no measured "
+            "algorithm comparison to interpret yet."
+        )
+    excluded = set(manifest["selected_destinations"]) - set(matched)
+    if excluded:
+        paragraphs.append(
+            "Excluded incomplete or mismatched destination groups: "
+            + ", ".join(sorted(excluded))
+            + ". Check manifest.json and run metadata."
+        )
+    for destination in matched:
         group = [r for r in aggregates if r["destination"] == destination]
         fastest = max(group, key=lambda r: r["goodput_run_mean_mbps"])
         valid_rtt = [r for r in group if r["rtt_run_mean_ms"] is not None]
         lowest = min(valid_rtt, key=lambda r: r["rtt_run_mean_ms"]) if valid_rtt else None
-        paragraphs.append(f"{destination}: highest measured mean goodput: {fastest['algorithm']} "
-                          f"({fastest['goodput_run_mean_mbps']:.3f} Mbit/s). " +
-                          (f"Lowest measured mean RTT: {lowest['algorithm']} "
-                           f"({lowest['rtt_run_mean_ms']:.3f} ms)." if lowest else "RTT unavailable."))
+        paragraphs.append(
+            f"{destination}: highest measured mean goodput: {fastest['algorithm']} "
+            f"({fastest['goodput_run_mean_mbps']:.3f} Mbit/s). "
+            + (
+                f"Lowest measured mean RTT: {lowest['algorithm']} "
+                f"({lowest['rtt_run_mean_ms']:.3f} ms)."
+                if lowest
+                else "RTT unavailable."
+            )
+        )
         for row in group:
-            paragraphs.append(f"  {row['algorithm']}: mean goodput "
-                              f"{row['goodput_run_mean_mbps']:.3f} Mbit/s, run standard deviation "
-                              f"{row['goodput_run_stddev_mbps']:.3f}, range "
-                              f"{row['goodput_run_min_mbps']:.3f}-{row['goodput_run_max_mbps']:.3f}.")
+            paragraphs.append(
+                f"  {row['algorithm']}: mean goodput "
+                f"{row['goodput_run_mean_mbps']:.3f} Mbit/s, run standard deviation "
+                f"{row['goodput_run_stddev_mbps']:.3f}, range "
+                f"{row['goodput_run_min_mbps']:.3f}-{row['goodput_run_max_mbps']:.3f}."
+            )
     if rows:
         paragraphs.append("Per-run statistics (goodput in Mbit/s; RTT in ms):")
         for row in rows:
-            rtt_text = f"{row['rtt_mean_ms']:.3f}" if row['rtt_mean_ms'] is not None else "unavailable"
+            rtt_text = (
+                f"{row['rtt_mean_ms']:.3f}" if row["rtt_mean_ms"] is not None else "unavailable"
+            )
             paragraphs.append(
                 f"{row['destination']} {row['algorithm']} run {row['repetition']}: "
                 f"goodput min/median/mean/P95 = {row['goodput_min_mbps']:.3f} / "
                 f"{row['goodput_median_mbps']:.3f} / {row['goodput_mean_mbps']:.3f} / "
                 f"{row['goodput_p95_mbps']:.3f}; mean RTT = {rtt_text}; "
                 f"retransmitted segments = {row['retransmitted_segments']}; "
-                f"matched destination = {row['matched_destination']}.")
+                f"matched destination = {row['matched_destination']}."
+            )
             if row["base_rtt_ms"] is not None and row["window_median_bytes"] is not None:
                 paragraphs.append(
                     f"Window/RTT context: minimum filtered RTT {row['base_rtt_ms']:.3f} ms; "
                     f"median cwnd {row['cwnd_median_segments']:.1f} segments "
                     f"({row['window_median_bytes']:.0f} bytes); observed-rate BDP proxy "
                     f"{row['observed_bdp_bytes']:.0f} bytes. This proxy uses achieved goodput, "
-                    "so it cannot independently identify bottleneck capacity.")
+                    "so it cannot independently identify bottleneck capacity."
+                )
     paragraphs += [
         "Interpretation: cwnd limits in-flight segments; its byte budget is cwnd * MSS. "
         "Without another bottleneck, the window-limited rate is approximately cwnd * MSS / RTT. "
@@ -230,42 +329,85 @@ def build_report(manifest, runs, out: Path):
         "and draft the algorithm design and explanatory text. The team must review the code, "
         "measurements, and claims and be able to explain them during evaluation.",
     ]
-    (reports_dir / "algorithm-comparison-report.md").write_text("# Assignment 2 Q3(a)\n\n" + "\n\n".join(paragraphs) + "\n")
+    (reports_dir / "algorithm-comparison-report.md").write_text(
+        "# TCP congestion control comparison\n\n" + "\n\n".join(paragraphs) + "\n"
+    )
     with PdfPages(reports_dir / "algorithm-comparison-report.pdf") as pdf:
-        text_pages(pdf, "Assignment 2 Q3(a): Algorithm comparison", paragraphs)
+        text_pages(pdf, "TCP congestion control comparison", paragraphs)
         for start in range(0, len(rows), 18):
-            page_rows = rows[start:start + 18]
+            page_rows = rows[start : start + 18]
             fig, ax = plt.subplots(figsize=(15, 8), layout="constrained")
             ax.axis("off")
             ax.set_title("Per-run goodput summary (Mbit/s); * = incomplete destination group")
-            table = ax.table(cellText=[[
-                r["destination"] + ("" if r["matched_destination"] else "*"), r["algorithm"],
-                r["repetition"], *[f"{r[key]:.3f}" for key in (
-                    "goodput_min_mbps", "goodput_median_mbps", "goodput_mean_mbps", "goodput_p95_mbps")]
-            ] for r in page_rows], colLabels=["Destination", "Algorithm", "Run", "Min", "Median", "Mean", "P95"],
-                cellLoc="center", loc="center", colWidths=[.3, .13, .07, .12, .12, .12, .12])
+            table = ax.table(
+                cellText=[
+                    [
+                        r["destination"] + ("" if r["matched_destination"] else "*"),
+                        r["algorithm"],
+                        r["repetition"],
+                        *[
+                            f"{r[key]:.3f}"
+                            for key in (
+                                "goodput_min_mbps",
+                                "goodput_median_mbps",
+                                "goodput_mean_mbps",
+                                "goodput_p95_mbps",
+                            )
+                        ],
+                    ]
+                    for r in page_rows
+                ],
+                colLabels=["Destination", "Algorithm", "Run", "Min", "Median", "Mean", "P95"],
+                cellLoc="center",
+                loc="center",
+                colWidths=[0.3, 0.13, 0.07, 0.12, 0.12, 0.12, 0.12],
+            )
             table.auto_set_font_size(False)
             table.set_fontsize(9)
             table.scale(1, 1.6)
             pdf.savefig(fig)
             plt.close(fig)
-        for destination in manifest["selected_destinations"]:
-            destination_runs = [(test, run) for test, run in runs if run[0].destination() == destination]
+        for destination in matched:
+            destination_runs = [
+                (test, run) for test, run in runs if run[0].destination() == destination
+            ]
             fig, ax = plt.subplots(figsize=(11.7, 5), layout="constrained")
+            colors = {
+                name: plt.get_cmap("tab10")(i % 10) for i, name in enumerate(manifest["algorithms"])
+            }
             for test, (meta, samples) in destination_runs:
-                ax.plot([s.time for s in samples], [s.goodput for s in samples], alpha=.65,
-                        label=f"{meta.algorithm} r{test['repetition']}")
+                ax.plot(
+                    [s.time for s in samples],
+                    [s.goodput for s in samples],
+                    alpha=0.65,
+                    color=colors[meta.algorithm],
+                    linestyle=["-", "--", ":", "-."][(test["repetition"] - 1) % 4],
+                    label=f"{meta.algorithm} r{test['repetition']}",
+                )
             ax.set(title=destination, xlabel="Time (s)", ylabel="Goodput (Mbit/s)", ylim=(0, None))
-            ax.legend(fontsize=8, ncol=3)
+            ax.legend(fontsize=8, ncol=min(len(manifest["algorithms"]), 4))
             style_axes(ax)
             pdf.savefig(fig)
             plt.close(fig)
         representative = manifest["representative"]
-        if representative:
-            plot_comparison(runs, manifest["algorithms"], representative, pdf,
-                            plots_dir / "algorithm-metrics-over-time.pdf", plots_dir / "algorithm-metrics-vs-goodput.pdf")
+        if representative not in matched:
+            representative = matched[0] if matched else None
+        if representative in matched:
+            plot_comparison(
+                runs,
+                manifest["algorithms"],
+                representative,
+                pdf,
+                plots_dir / "algorithm-metrics-over-time.pdf",
+                plots_dir / "algorithm-metrics-vs-goodput.pdf",
+            )
+        else:
+            (plots_dir / "algorithm-metrics-over-time.pdf").unlink(missing_ok=True)
+            (plots_dir / "algorithm-metrics-vs-goodput.pdf").unlink(missing_ok=True)
         design = Path(__file__).with_name("Q3_DESIGN.md")
         if design.exists():
-            text_pages(pdf, "Assignment 2 Q3(b): Algorithm design", design.read_text().splitlines())
+            text_pages(
+                pdf, "Controller design reference (Q3_DESIGN.md)", design.read_text().splitlines()
+            )
     for test, (meta, samples) in runs:
         save_run_plots(meta, samples, out / "tcp-traces" / meta.slug())
