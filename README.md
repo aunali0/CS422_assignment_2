@@ -10,11 +10,11 @@ PDF plots, and summary tables.
 
 ## Start here
 
-- [Q3_REPORT.md](Q3_REPORT.md): main comparison report, with simpler explanations.
+- [Q3_REPORT.md](Q3_REPORT.md): comparison results, interpretation, and controller design.
 - [Q3_RUN.md](Q3_RUN.md): comparison, Docker, and reproduction commands.
 - [Q3_DESIGN.md](Q3_DESIGN.md): selected controller proposal; not implemented or tested.
 - [Saved results](results/algorithm-comparisons/q3-test/): three destinations, three algorithms, three repetitions.
-- [Existing report PDF](results/algorithm-comparisons/q3-test/reports/reviewed-algorithm-comparison.pdf): earlier report text; the Markdown sources have since been simplified.
+- [Report PDF](results/algorithm-comparisons/q3-test/reports/reviewed-algorithm-comparison.pdf): comparison results, plots, and controller design.
 
 ## Install
 
@@ -112,7 +112,7 @@ Within it:
 | `reports/per-test-statistics.csv` | Statistics for every successful comparison test |
 | `reports/destination-algorithm-statistics.csv` | Statistics across matched repetitions |
 | `reports/algorithm-comparison-report.*` | Detailed comparison report and plots |
-| `reports/reviewed-algorithm-comparison.pdf` | Reviewed Q3 report, when observations are available |
+| `reports/reviewed-algorithm-comparison.pdf` | Q3 report generated from `Q3_REPORT.md` for the saved `q3-test` experiment |
 
 Test folder names identify the run and destination; comparison names also include
 the algorithm and repetition. `destinations` produces TCP plots for the server

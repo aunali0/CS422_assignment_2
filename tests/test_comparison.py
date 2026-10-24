@@ -129,6 +129,7 @@ class ComparisonTests(unittest.TestCase):
                  (replace(meta, algorithm=algorithm, run_id=f"fixture-{algorithm}-{repetition}"), samples))
                 for algorithm in algorithms for repetition in (1, 2, 3)]
         manifest = {
+            "run_id": "q3-test",
             "selected_destinations": [meta.destination()], "requested_destinations": 1,
             "representative": meta.destination(), "algorithms": algorithms,
             "repetitions": 3, "config": {"duration": meta.duration,
@@ -143,10 +144,12 @@ class ComparisonTests(unittest.TestCase):
                          "reports/destination-algorithm-statistics.csv"):
                 self.assertGreater((out / name).stat().st_size, 100)
             self.assertIn("cubic", (out / "reports/algorithm-comparison-report.md").read_text())
-            (out / "observations.md").write_text("# Test report\n\nOffline fixture only.")
             build_reviewed_report(manifest, runs, out)
             self.assertGreater((out / "reports/reviewed-algorithm-comparison.pdf").stat().st_size, 100)
             self.assertTrue((out / "plots/reviewed-report-figures/algorithm-metrics-over-time.pdf").exists())
+            with patch("reviewed_report.PdfPages") as pdf:
+                build_reviewed_report({**manifest, "run_id": "another-experiment"}, runs, out)
+                pdf.assert_not_called()
 
     def test_common_axes_include_later_algorithms(self):
         meta, samples = load_run(BASELINE)

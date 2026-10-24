@@ -236,4 +236,4 @@ Retransmissions are a loss proxy, not a direct packet-loss probability. Reorderi
 
 Limitations: sequential tests share destinations and settings but cannot hold Internet cross-traffic or routes constant. Rotating order reduces systematic order bias without eliminating it. Short runs include startup. Excluding failed candidate groups can bias the sample toward reliable servers. Differences of the same magnitude as run variability are not strong evidence of an advantage. Establishing operating regimes causally requires controlled bottleneck bandwidth, RTT, queue size, and loss; public traces alone are insufficient.
 
-AI assistance: an AI coding assistant helped implement experiment automation, plotting, and draft the algorithm design and explanatory text. The team must review the code, measurements, and claims and be able to explain them during evaluation.
+AI assistance: an AI coding assistant helped implement experiment automation, plotting, and draft the algorithm design and explanatory text.

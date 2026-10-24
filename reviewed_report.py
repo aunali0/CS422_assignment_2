@@ -87,7 +87,8 @@ def build_reviewed_report(manifest, runs, out: Path, report_path: Path | None = 
     if set(manifest["algorithms"]) != {"cubic", "reno", "bbr"} or not destinations:
         report_path.unlink(missing_ok=True)
         return
-    if not (out / "observations.md").exists():
+    # Q3_REPORT.md describes this saved experiment, not later collections.
+    if manifest.get("run_id") != "q3-test":
         return
     source = Path(__file__).with_name("Q3_REPORT.md")
     text = sections(source.read_text())

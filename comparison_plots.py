@@ -326,8 +326,7 @@ def build_report(manifest, runs, out: Path):
         "not strong evidence of an advantage. Establishing operating regimes causally requires "
         "controlled bottleneck bandwidth, RTT, queue size, and loss; public traces alone are insufficient.",
         "AI assistance: an AI coding assistant helped implement experiment automation, plotting, "
-        "and draft the algorithm design and explanatory text. The team must review the code, "
-        "measurements, and claims and be able to explain them during evaluation.",
+        "and draft the algorithm design and explanatory text.",
     ]
     (reports_dir / "algorithm-comparison-report.md").write_text(
         "# TCP congestion control comparison\n\n" + "\n\n".join(paragraphs) + "\n"

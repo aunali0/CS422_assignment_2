@@ -2,24 +2,42 @@
 
 ## Method
 
-We compared CUBIC, Reno, and BBR at three destinations. Each algorithm had three
-60-second runs per destination, sampled once per second: 27 matched runs. We selected
-each algorithm before connecting the data socket and recorded the name read back from
-it. The host used Linux 6.18.33.2-microsoft-standard-WSL2, Python 3.14.8, matplotlib
-3.11.2, and pydantic 2.13.5.
+We compared CUBIC, Reno, and BBR at three destinations, using three 60-second runs
+per algorithm and one-second sampling: 27 matched runs and 1,620 samples. We selected
+each algorithm before connecting the data socket and recorded its readback. The host
+used Linux 6.18.33.2-microsoft-standard-WSL2, Python 3.14.8, matplotlib 3.11.2,
+and pydantic 2.13.5.
 
 We shuffled destinations with seed 422 and rotated the algorithm order. Dallas used
 BBR/CUBIC/Reno, CUBIC/Reno/BBR, then Reno/BBR/CUBIC. The other two destinations
 started with the second and third orders. Tests ran sequentially with a two-second
-pause. Dallas was the first complete group and became the representative. Five
-incomplete groups were excluded from comparisons; their successful runs and failures
-remain saved.
+pause. Dallas was the first complete group and became the representative. Across
+eight candidates, 49 tests succeeded and 23 failed. Five incomplete groups were
+excluded; their 22 successful runs and all failures remain saved.
 
 Goodput is acknowledged bytes divided by actual elapsed time, converted to Mbit/s.
 Each algorithm mean averages its three run rates; ± shows their sample standard
 deviation. RTT is the average sampled smoothed RTT. Retransmissions indicate possible
-loss, not an exact loss probability. Per-test tables also give minimum, median, mean,
-and P95 goodput; P95 uses linear interpolation.
+loss, not an exact loss probability. Per-test tables give minimum, median, mean,
+and P95 goodput; P95 interpolates at sorted index (n - 1) * 0.95. Startup and stalls
+are retained.
+
+## Results
+
+| Destination | Algorithm | Goodput mean ± SD (Mbit/s) | Mean RTT (ms) | Total retransmissions |
+| --- | --- | ---: | ---: | ---: |
+| Dallas | CUBIC | 273.96 ± 5.63 | 68.73 | 224 |
+| Dallas | Reno | 281.30 ± 2.76 | 73.65 | 444 |
+| Dallas | BBR | 269.79 ± 11.69 | 64.53 | 196 |
+| Netfiber | CUBIC | 118.08 ± 4.16 | 181.90 | 23 |
+| Netfiber | Reno | 119.07 ± 0.89 | 181.67 | 41 |
+| Netfiber | BBR | 106.59 ± 17.37 | 177.39 | 398 |
+| 96.45.41.167 | CUBIC | 163.12 ± 17.51 | 132.58 | 120 |
+| 96.45.41.167 | Reno | 163.52 ± 11.80 | 136.69 | 11 |
+| 96.45.41.167 | BBR | 147.47 ± 6.02 | 150.60 | 541 |
+
+Dallas is `dal.speedtest.clouvider.net:5200`; Netfiber is
+`speed.netfiber.net.il:5201`; the IP destination uses port 30001.
 
 ## Observations
 
@@ -31,12 +49,14 @@ goodput.
 Dallas: Reno averaged 281.30 Mbit/s, CUBIC 273.96, and BBR 269.79. BBR had the lowest
 mean RTT, 64.53 ms; Reno had the highest, 73.65 ms. Reno's median cwnd grew from
 1,982 to 7,854 segments across runs, but goodput stayed near 279–284 Mbit/s. The
-extra window did not produce a similar increase in delivery.
+extra window did not produce a similar increase in delivery. Minimum RTT was about
+29–32 ms, below the sampled means, consistent with queueing or other variable delay.
 
 Netfiber: Reno and CUBIC were close at 119.07 and 118.08 Mbit/s, with mean RTTs near
 182 ms. BBR had slightly lower RTT but averaged 106.59 Mbit/s. Its third run fell to
-86.57 Mbit/s and recorded 396 retransmissions. RTT remained near baseline during much
-of the slowdown, so RTT alone would not describe this problem.
+86.57 Mbit/s and recorded 396 retransmissions, versus two and zero in the earlier
+runs. Minimum RTT was about 170–174 ms. RTT remained near baseline during much of
+the slowdown, so RTT alone would not describe this problem.
 
 IP destination: Reno and CUBIC were almost tied at 163.52 and 163.12 Mbit/s. Their
 run standard deviations were 11.80 and 17.51 Mbit/s, much larger than the difference
@@ -60,6 +80,7 @@ server limits may also matter.
 Public paths and traffic changed between tests. Three repetitions and one-second
 sampling give limited evidence, and small differences can reflect run variation.
 These single-flow experiments do not test fairness between competing flows.
+Retaining only complete groups favors reliable destinations.
 
 ## Design
 

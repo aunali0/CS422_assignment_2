@@ -4,10 +4,8 @@ The saved Q3 experiment compares CUBIC, Reno, and BBR at three destinations, wit
 three 60-second runs per algorithm and one-second sampling. All 27 matched runs
 completed. Data and outputs are under `results/algorithm-comparisons/q3-test/`.
 
-Read [Q3_REPORT.md](Q3_REPORT.md) for the main report and
-[observations.md](results/algorithm-comparisons/q3-test/observations.md) for the
-results table and supporting notes. Existing PDFs contain the earlier report text;
-these Markdown sources have since been simplified.
+Read [Q3_REPORT.md](Q3_REPORT.md) for the results, interpretation, and controller
+design.
 
 ## Setup and collection
 
@@ -49,8 +47,8 @@ The image uses `ubuntu:24.04` and Python 3.12. Containers share the host kernel,
 so the host must support the requested algorithms. The saved experiment used WSL2
 kernel `6.18.33.2-microsoft-standard-WSL2`, Python 3.14.8, matplotlib 3.11.2, and
 pydantic 2.13.5. `requirements.txt` pins a different dependency environment. The
-Docker pipeline remains unverified, and the saved manifest does not establish
-whether Docker was used or identify the BBR version.
+saved manifest does not establish whether Docker was used or identify the BBR
+version.
 
 ## Outputs and offline analysis
 
@@ -65,7 +63,7 @@ Each experiment is under `results/algorithm-comparisons/<run-id>/`:
 | `reports/destination-algorithm-statistics.csv` | Means and variation across matched repetitions |
 | `plots/algorithm-metrics-*.pdf` | Representative destination, all algorithms, common axis scales |
 | `reports/algorithm-comparison-report.*` | Generated detailed report and plots |
-| `reports/reviewed-algorithm-comparison.pdf` | Reviewed report, generated from `Q3_REPORT.md` when observations are present |
+| `reports/reviewed-algorithm-comparison.pdf` | Report generated from `Q3_REPORT.md` for the saved `q3-test` experiment |
 
 The first complete destination is the representative; it is not selected for high
 throughput. To rebuild outputs from saved measurements without contacting servers:
@@ -74,32 +72,9 @@ throughput. To rebuild outputs from saved measurements without contacting server
 python main.py analyze --manifest results/algorithm-comparisons/q3-test/manifest.json
 ```
 
-This command overwrites the generated reports and plots. The current Markdown edits
-have not been rendered into the existing PDFs.
+This command overwrites the generated reports and plots.
 
-## Assignment 3 and submission
-
-[Q3_DESIGN.md](Q3_DESIGN.md) is the selected Assignment 2 controller proposal and
-starting point for Assignment 3. The report sources and generator use this design.
-It has not been implemented or evaluated. Document any further implementation
-changes from the selected Assignment 2 design.
-
-Once a custom controller is implemented and loaded, collect four-algorithm tests:
-
-```sh
-python main.py compare -s iperf3-servers.csv -c 3 -t 10 -g 0.2 -r 3 --algorithms cubic reno bbr CUSTOM_NAME --run-id a3-final -o results
-```
-
-The rotating order still applies; three repetitions cannot fully balance four order
-positions. Record the actual order in the report. Review report wording and layout
-for four algorithms before submission.
+## Submission
 
 For Assignment 2, combine Q1/Q2 and Q3 into one PDF with the plots, interpretations,
 repository and code links, reproduction instructions, and a brief AI acknowledgement.
-The saved measurements have been checked against their summaries; see `validation.json`.
-Mocked tests cover algorithm selection and experiment handling. The test suite also
-includes offline report generation and writes temporary outputs:
-
-```sh
-python -m unittest discover -s tests -v
-```
