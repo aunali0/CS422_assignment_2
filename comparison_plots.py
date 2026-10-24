@@ -1,5 +1,4 @@
 import csv
-import math
 from collections import defaultdict
 from pathlib import Path
 from statistics import fmean, median, stdev
@@ -8,15 +7,27 @@ from textwrap import wrap
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
-from plots import Run, save_run_plots, style_axes, values
+from measurement import Run, percentile
+from plots import (
+    GOODPUT_GRAPHS_NAME,
+    LINE_STYLES,
+    SUMMARY_TABLE_NAME,
+    algorithm_color,
+    plot_destinations,
+    save_run_plots,
+    save_summary_table,
+    style_axes,
+    values,
+)
 
-
-def percentile(data, fraction):
-    ordered = sorted(data)
-    position = (len(ordered) - 1) * fraction
-    low = math.floor(position)
-    high = math.ceil(position)
-    return ordered[low] + (ordered[high] - ordered[low]) * (position - low)
+# (label, value) rows of the Q3 comparison grids; the scatter grid uses the first three.
+METRICS = [
+    ("Congestion window (segments)", lambda s: s.info["snd_cwnd"]),
+    ("RTT (ms)", lambda s: s.ms("rtt")),
+    ("Retransmitted segments / interval", lambda s: s.retrans_delta),
+    ("Goodput (Mbit/s)", lambda s: s.goodput),
+]
+MARKERS = ["o", "x", "^", "s"]
 
 
 def run_statistics(test, run: Run):
@@ -25,13 +36,15 @@ def run_statistics(test, run: Run):
     rtts = [s.rtt_ms() for s in samples if s.rtt_ms() is not None]
     elapsed = sum(s.interval for s in samples)
     windows = [s.info["snd_cwnd"] for s in samples if s.info["snd_cwnd"] is not None]
-    base_rtts = [s.info["min_rtt"] / 1000 for s in samples if s.info["min_rtt"]]
-    base_rtt = min(base_rtts or rtts) if (base_rtts or rtts) else None
+    # Base RTT: the kernel's windowed minimum, else the lowest smoothed RTT sampled.
+    base_rtts = [s.ms("min_rtt") for s in samples if s.info["min_rtt"]] or rtts
+    base_rtt = min(base_rtts) if base_rtts else None
     window_bytes = [
         s.info["snd_cwnd"] * s.info["snd_mss"]
         for s in samples
         if s.info["snd_cwnd"] is not None and s.info["snd_mss"] is not None
     ]
+    # Whole-run goodput: all acknowledged bytes over all elapsed time (bytes/s).
     weighted_rate = sum(s.bytes_acked_delta for s in samples) / elapsed
     return {
         "destination": meta.destination(),
@@ -42,7 +55,7 @@ def run_statistics(test, run: Run):
         "goodput_median_mbps": median(goodput),
         "goodput_mean_mbps": fmean(goodput),
         "goodput_p95_mbps": percentile(goodput, 0.95),
-        "goodput_weighted_mbps": sum(s.bytes_acked_delta for s in samples) * 8 / elapsed / 1e6,
+        "goodput_weighted_mbps": weighted_rate * 8 / 1e6,
         "rtt_mean_ms": fmean(rtts) if rtts else None,
         "rtt_p95_ms": percentile(rtts, 0.95) if rtts else None,
         "base_rtt_ms": base_rtt,
@@ -115,86 +128,70 @@ def matched_destinations(manifest, runs):
     return matched
 
 
-def plot_comparison(runs, algorithms, destination, pdf, times_pdf, scatter_pdf):
-    selected = [(test, run) for test, run in runs if run[0].destination() == destination]
-    colors = {name: plt.get_cmap("tab10")(i % 10) for i, name in enumerate(algorithms)}
-    metrics = [
-        ("Congestion window (segments)", lambda s: s.info["snd_cwnd"]),
-        ("RTT (ms)", lambda s: s.rtt_ms()),
-        ("Retransmitted segments / interval", lambda s: s.retrans_delta),
-        ("Goodput (Mbit/s)", lambda s: s.goodput),
+def plot_comparison(runs, algorithms, destination, times_pdf, scatter_pdf, pdf=None):
+    # Q3(a): the Q2(b) plots for every algorithm at one destination. One column per
+    # algorithm and one line/marker style per repetition; each metric row shares its
+    # scale across columns so the algorithms can be compared directly.
+    selected = [
+        (test, meta, samples) for test, (meta, samples) in runs if meta.destination() == destination
     ]
-    fig, axes = plt.subplots(
-        4,
-        len(algorithms),
-        squeeze=False,
-        figsize=(5 * len(algorithms), 12),
-        sharey="row",
-        sharex=True,
-        layout="constrained",
-    )
-    fig.suptitle(f"{destination} | matched settings; individual repetitions")
-    for col, algorithm in enumerate(algorithms):
-        axes[0, col].set_title(algorithm)
-        for test, (meta, samples) in selected:
-            if meta.algorithm != algorithm:
-                continue
-            for row, (label, pick) in enumerate(metrics):
-                axes[row, col].plot(
-                    [s.time for s in samples],
-                    values(samples, pick),
-                    color=colors[algorithm],
-                    alpha=0.65,
-                    linestyle=["-", "--", ":", "-."][(test["repetition"] - 1) % 4],
-                    label=f"Run {test['repetition']}",
-                )
-                style_axes(axes[row, col])
-        axes[0, col].legend(fontsize=8)
-        axes[-1, col].set_xlabel("Time (s)")
-    for ax in axes.flat:
-        ax.set_xlim(left=0)
-        ax.set_ylim(bottom=0)
-    for row, (label, _) in enumerate(metrics):
-        axes[row, 0].set_ylabel(label)
-    fig.savefig(times_pdf, bbox_inches="tight", pad_inches=0.15)
-    pdf.savefig(fig, bbox_inches="tight", pad_inches=0.15)
-    plt.close(fig)
-    fig, axes = plt.subplots(
-        3,
-        len(algorithms),
-        squeeze=False,
-        figsize=(5 * len(algorithms), 10),
-        sharex="row",
-        sharey=True,
-        layout="constrained",
-    )
-    fig.suptitle(f"{destination} | all repetitions; common scales per metric")
-    for col, algorithm in enumerate(algorithms):
-        axes[0, col].set_title(algorithm)
-        for test, (meta, samples) in selected:
-            if meta.algorithm != algorithm:
-                continue
-            for row, (label, pick) in enumerate(metrics[:3]):
-                axes[row, col].scatter(
-                    values(samples, pick),
-                    [s.goodput for s in samples],
-                    s=10,
-                    alpha=0.4,
-                    color=colors[algorithm],
-                    marker=["o", "x", "^", "s"][(test["repetition"] - 1) % 4],
-                    label=f"Run {test['repetition']}",
-                )
-                axes[row, col].set_xlabel(label)
-                style_axes(axes[row, col])
-        axes[0, col].legend(fontsize=8)
-    for ax in axes.flat:
-        ax.set_xlim(left=0)
-        ax.set_ylim(bottom=0)
-    for ax in axes[:, 0]:
-        ax.set_ylabel("Goodput (Mbit/s)")
-    fig.savefig(scatter_pdf, bbox_inches="tight", pad_inches=0.15)
-    pdf.savefig(fig, bbox_inches="tight", pad_inches=0.15)
-    plt.close(fig)
+
+    for kind, path in (("time series", times_pdf), ("scatter", scatter_pdf)):
+        time_series = kind == "time series"
+        metrics = METRICS if time_series else METRICS[:3]
+        fig, axes = plt.subplots(
+            len(metrics),
+            len(algorithms),
+            squeeze=False,
+            figsize=(5 * len(algorithms), 12 if time_series else 10),
+            sharex=True if time_series else "row",
+            sharey="row" if time_series else True,
+            layout="constrained",
+        )
+        fig.suptitle(f"{destination} | {kind}; all repetitions; common scales per metric")
+
+        for col, algorithm in enumerate(algorithms):
+            axes[0, col].set_title(algorithm)
+            for test, meta, samples in selected:
+                if meta.algorithm != algorithm:
+                    continue
+                rep = test["repetition"] - 1
+                for row, (label, pick) in enumerate(metrics):
+                    ax = axes[row, col]
+                    style = {"color": algorithm_color(algorithm), "label": f"Run {rep + 1}"}
+                    if time_series:
+                        ax.plot(
+                            [s.time for s in samples],
+                            values(samples, pick),
+                            alpha=0.65,
+                            linestyle=LINE_STYLES[rep % len(LINE_STYLES)],
+                            **style,
+                        )
+                    else:
+                        ax.scatter(
+                            values(samples, pick),
+                            [s.goodput for s in samples],
+                            s=10,
+                            alpha=0.4,
+                            marker=MARKERS[rep % len(MARKERS)],
+                            **style,
+                        )
+                        ax.set_xlabel(label)
+                    style_axes(ax)
+            axes[0, col].legend(fontsize=8)
+            if time_series:
+                axes[-1, col].set_xlabel("Time (s)")
+
+        for ax in axes.flat:
+            ax.set_xlim(left=0)
+            ax.set_ylim(bottom=0)
+        for row, (label, _) in enumerate(metrics):
+            axes[row, 0].set_ylabel(label if time_series else "Goodput (Mbit/s)")
+
+        fig.savefig(path, bbox_inches="tight", pad_inches=0.15)
+        if pdf is not None:
+            pdf.savefig(fig, bbox_inches="tight", pad_inches=0.15)
+        plt.close(fig)
 
 
 def build_report(manifest, runs, out: Path):
@@ -204,6 +201,7 @@ def build_report(manifest, runs, out: Path):
     plots_dir.mkdir(parents=True, exist_ok=True)
 
     matched = matched_destinations(manifest, runs)
+    matched_runs = [run for _, run in runs if run[0].destination() in matched]
     rows = [
         dict(run_statistics(test, run), matched_destination=run[0].destination() in matched)
         for test, run in runs
@@ -366,28 +364,8 @@ def build_report(manifest, runs, out: Path):
             table.scale(1, 1.6)
             pdf.savefig(fig)
             plt.close(fig)
-        for destination in matched:
-            destination_runs = [
-                (test, run) for test, run in runs if run[0].destination() == destination
-            ]
-            fig, ax = plt.subplots(figsize=(11.7, 5), layout="constrained")
-            colors = {
-                name: plt.get_cmap("tab10")(i % 10) for i, name in enumerate(manifest["algorithms"])
-            }
-            for test, (meta, samples) in destination_runs:
-                ax.plot(
-                    [s.time for s in samples],
-                    [s.goodput for s in samples],
-                    alpha=0.65,
-                    color=colors[meta.algorithm],
-                    linestyle=["-", "--", ":", "-."][(test["repetition"] - 1) % 4],
-                    label=f"{meta.algorithm} r{test['repetition']}",
-                )
-            ax.set(title=destination, xlabel="Time (s)", ylabel="Goodput (Mbit/s)", ylim=(0, None))
-            ax.legend(fontsize=8, ncol=min(len(manifest["algorithms"]), 4))
-            style_axes(ax)
-            pdf.savefig(fig)
-            plt.close(fig)
+        # Q1 goodput over time for the complete destinations (all algorithms and runs).
+        plot_destinations(matched_runs, plots_dir / GOODPUT_GRAPHS_NAME, pdf)
         representative = manifest["representative"]
         if representative not in matched:
             representative = matched[0] if matched else None
@@ -396,17 +374,31 @@ def build_report(manifest, runs, out: Path):
                 runs,
                 manifest["algorithms"],
                 representative,
-                pdf,
                 plots_dir / "algorithm-metrics-over-time.pdf",
                 plots_dir / "algorithm-metrics-vs-goodput.pdf",
+                pdf,
             )
         else:
             (plots_dir / "algorithm-metrics-over-time.pdf").unlink(missing_ok=True)
             (plots_dir / "algorithm-metrics-vs-goodput.pdf").unlink(missing_ok=True)
+
+        # The same comparison for every complete destination, for reference.
+        for destination in matched:
+            destination_dir = plots_dir / "destinations" / destination.replace(":", "_")
+            destination_dir.mkdir(parents=True, exist_ok=True)
+            plot_comparison(
+                runs,
+                manifest["algorithms"],
+                destination,
+                destination_dir / "algorithm-metrics-over-time.pdf",
+                destination_dir / "algorithm-metrics-vs-goodput.pdf",
+            )
         design = Path(__file__).with_name("Q3_DESIGN.md")
         if design.exists():
             text_pages(
                 pdf, "Controller design reference (Q3_DESIGN.md)", design.read_text().splitlines()
             )
-    for test, (meta, samples) in runs:
+    # Q1 summary table for the complete destinations; Q2 plots for every successful run.
+    save_summary_table(matched_runs, reports_dir / SUMMARY_TABLE_NAME)
+    for _, (meta, samples) in runs:
         save_run_plots(meta, samples, out / "tcp-traces" / meta.slug())

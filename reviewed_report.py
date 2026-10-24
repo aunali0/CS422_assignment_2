@@ -151,7 +151,7 @@ def build_reviewed_report(manifest, runs, out: Path, report_path: Path | None = 
         fig.text(
             0.075,
             0.15,
-            f"Reproduce: python main.py analyze --manifest {out / 'manifest.json'}",
+            f"Reproduce: python main.py analyze {out}",
             fontsize=8.5,
         )
         fig.text(
@@ -203,9 +203,9 @@ def build_reviewed_report(manifest, runs, out: Path, report_path: Path | None = 
             matched,
             manifest["algorithms"],
             manifest["representative"] if manifest["representative"] in destinations else destinations[0],
-            PlotPages(pdf),
             support / "algorithm-metrics-over-time.pdf",
             support / "algorithm-metrics-vs-goodput.pdf",
+            PlotPages(pdf),
         )
 
         fig = page("3(b): Proposed congestion control algorithm", 5)

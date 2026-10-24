@@ -10,7 +10,7 @@ from json import JSONDecodeError
 from pydantic import ValidationError
 
 from log_utils import log_message, suppress_logging
-from measurement import RunMetadata, Sample, current_metadata
+from measurement import RunMetadata, Sample
 from protocol import (
     IPerf3Test,
     State,
@@ -46,7 +46,6 @@ class ClientConfig:
 class TestResult:
     metadata: RunMetadata
     samples: list[Sample]
-    total_bytes_sent: int
 
 
 @contextmanager
@@ -110,11 +109,12 @@ def run_test(host: str, port: int, cfg: ClientConfig, run_id: str) -> TestResult
 
             log_message("test", f"Uploading for {cfg.duration}s")
 
-            test_payload = secrets.token_bytes(BUF_SIZE)
+            payload_block = secrets.token_bytes(BUF_SIZE)
 
+            # Read back the algorithm the kernel actually uses on this socket.
             algorithm = get_tcp_algorithm(data_sock)
             info_bytes = get_tcp_info_bytes(data_sock)
-            metadata = current_metadata(
+            metadata = RunMetadata.now(
                 run_id, host, port, algorithm, cfg.duration, cfg.goodput_interval, len(info_bytes)
             )
             log_message("test", f"Algorithm {algorithm} | tcp_info {len(info_bytes)} bytes")
@@ -191,7 +191,7 @@ def run_test(host: str, port: int, cfg: ClientConfig, run_id: str) -> TestResult
                 data_sock.settimeout(data_timeout)
 
                 try:
-                    bytes_sent = data_sock.send(test_payload)
+                    bytes_sent = data_sock.send(payload_block)
                 except TimeoutError:
                     continue
 
@@ -218,7 +218,7 @@ def run_test(host: str, port: int, cfg: ClientConfig, run_id: str) -> TestResult
         cpu_util_sys = sys_time / time_elapsed * 100
         cpu_util_total = cpu_util_user + cpu_util_sys
 
-        test_payload: dict[str, object] = {
+        results_payload: dict[str, object] = {
             "cpu_util_total": cpu_util_total,
             "cpu_util_user": cpu_util_user,
             "cpu_util_system": cpu_util_sys,
@@ -236,13 +236,13 @@ def run_test(host: str, port: int, cfg: ClientConfig, run_id: str) -> TestResult
                 }
             ],
         }
-        send_json(control_sock, test_payload, "control")
+        send_json(control_sock, results_payload, "control")
         receive_json(control_sock, IPerf3Test, "control")
 
         receive_state(control_sock, State.DISPLAY_RESULTS, "control")
         send_state(control_sock, State.IPERF_DONE, "control")
 
-        return TestResult(metadata=metadata, samples=samples, total_bytes_sent=total_bytes_sent)
+        return TestResult(metadata=metadata, samples=samples)
 
 
 def try_run_test(

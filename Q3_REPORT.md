@@ -134,12 +134,11 @@ change, and interval goodput can be noisy.
 ## Reproduction
 
 Saved data and summaries are under results/algorithm-comparisons/q3-test/. Build
-outputs offline with python main.py analyze --manifest
-results/algorithm-comparisons/q3-test/manifest.json. Collection and Docker commands
-are in [Q3_RUN.md](Q3_RUN.md). The Dockerfile uses ubuntu:24.04; the recorded run
-does not establish whether Docker was used or which BBR version was installed.
-requirements.txt describes a different dependency environment from the saved
-experiment.
+outputs offline with python main.py analyze results/algorithm-comparisons/q3-test.
+Collection and Docker commands are in [Q3_RUN.md](Q3_RUN.md). The Dockerfile uses
+ubuntu:24.04 with the same Python package versions as the saved experiment; the
+recorded run does not establish whether Docker was used or which BBR version was
+installed.
 
 Repository: https://github.com/aunali0/CS422_assignment_2 . Algorithm selection is in
 client.py:data_connection, experiment ordering in comparison.py:run_comparison,

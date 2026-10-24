@@ -19,133 +19,73 @@
 import socket
 import struct
 
-# (name, struct format code), in kernel declaration order.
-TCP_INFO_FIELDS: tuple[tuple[str, str], ...] = (
-    ("state", "B"),
-    ("ca_state", "B"),
-    ("retransmits", "B"),
-    ("probes", "B"),
-    ("backoff", "B"),
-    ("options", "B"),
-    ("wscale", "B"),  # snd_wscale:4, rcv_wscale:4
-    ("app_limited", "B"),  # delivery_rate_app_limited:1, fastopen_client_fail:2
-    ("rto", "I"),
-    ("ato", "I"),
-    ("snd_mss", "I"),
-    ("rcv_mss", "I"),
-    ("unacked", "I"),
-    ("sacked", "I"),
-    ("lost", "I"),
-    ("retrans", "I"),
-    ("fackets", "I"),
-    ("last_data_sent", "I"),
-    ("last_ack_sent", "I"),
-    ("last_data_recv", "I"),
-    ("last_ack_recv", "I"),
-    ("pmtu", "I"),
-    ("rcv_ssthresh", "I"),
-    ("rtt", "I"),
-    ("rttvar", "I"),
-    ("snd_ssthresh", "I"),
-    ("snd_cwnd", "I"),
-    ("advmss", "I"),
-    ("reordering", "I"),
-    ("rcv_rtt", "I"),
-    ("rcv_space", "I"),
-    ("total_retrans", "I"),
-    ("pacing_rate", "Q"),
-    ("max_pacing_rate", "Q"),
-    ("bytes_acked", "Q"),
-    ("bytes_received", "Q"),
-    ("segs_out", "I"),
-    ("segs_in", "I"),
-    ("notsent_bytes", "I"),
-    ("min_rtt", "I"),
-    ("data_segs_in", "I"),
-    ("data_segs_out", "I"),
-    ("delivery_rate", "Q"),
-    ("busy_time", "Q"),
-    ("rwnd_limited", "Q"),
-    ("sndbuf_limited", "Q"),
-    ("delivered", "I"),
-    ("delivered_ce", "I"),
-    ("bytes_sent", "Q"),
-    ("bytes_retrans", "Q"),
-    ("dsack_dups", "I"),
-    ("reord_seen", "I"),
-    ("rcv_ooopack", "I"),
-    ("snd_wnd", "I"),
-    ("rcv_wnd", "I"),
-    ("rehash", "I"),
-    ("total_rto", "H"),
-    ("total_rto_recoveries", "H"),
-    ("total_rto_time", "I"),
+# (name, struct format code, unit), in kernel declaration order.
+TCP_INFO_FIELDS: tuple[tuple[str, str, str], ...] = (
+    ("state", "B", "enum"),
+    ("ca_state", "B", "enum"),
+    ("retransmits", "B", "count"),
+    ("probes", "B", "count"),
+    ("backoff", "B", "count"),
+    ("options", "B", "flags"),
+    ("wscale", "B", "flags"),  # snd_wscale:4, rcv_wscale:4
+    ("app_limited", "B", "flags"),  # delivery_rate_app_limited:1, fastopen_client_fail:2
+    ("rto", "I", "us"),
+    ("ato", "I", "us"),
+    ("snd_mss", "I", "bytes"),
+    ("rcv_mss", "I", "bytes"),
+    ("unacked", "I", "segments"),
+    ("sacked", "I", "segments"),
+    ("lost", "I", "segments"),
+    ("retrans", "I", "segments"),
+    ("fackets", "I", "segments"),
+    ("last_data_sent", "I", "ms"),
+    ("last_ack_sent", "I", "ms"),
+    ("last_data_recv", "I", "ms"),
+    ("last_ack_recv", "I", "ms"),
+    ("pmtu", "I", "bytes"),
+    ("rcv_ssthresh", "I", "bytes"),
+    ("rtt", "I", "us"),
+    ("rttvar", "I", "us"),
+    ("snd_ssthresh", "I", "segments"),
+    ("snd_cwnd", "I", "segments"),
+    ("advmss", "I", "bytes"),
+    ("reordering", "I", "segments"),
+    ("rcv_rtt", "I", "us"),
+    ("rcv_space", "I", "bytes"),
+    ("total_retrans", "I", "segments"),
+    ("pacing_rate", "Q", "bytes/s"),
+    ("max_pacing_rate", "Q", "bytes/s"),
+    ("bytes_acked", "Q", "bytes"),
+    ("bytes_received", "Q", "bytes"),
+    ("segs_out", "I", "segments"),
+    ("segs_in", "I", "segments"),
+    ("notsent_bytes", "I", "bytes"),
+    ("min_rtt", "I", "us"),
+    ("data_segs_in", "I", "segments"),
+    ("data_segs_out", "I", "segments"),
+    ("delivery_rate", "Q", "bytes/s"),
+    ("busy_time", "Q", "us"),
+    ("rwnd_limited", "Q", "us"),
+    ("sndbuf_limited", "Q", "us"),
+    ("delivered", "I", "segments"),
+    ("delivered_ce", "I", "segments"),
+    ("bytes_sent", "Q", "bytes"),
+    ("bytes_retrans", "Q", "bytes"),
+    ("dsack_dups", "I", "count"),
+    ("reord_seen", "I", "count"),
+    ("rcv_ooopack", "I", "count"),
+    ("snd_wnd", "I", "bytes"),
+    ("rcv_wnd", "I", "bytes"),
+    ("rehash", "I", "count"),
+    ("total_rto", "H", "count"),
+    ("total_rto_recoveries", "H", "count"),
+    ("total_rto_time", "I", "ms"),
 )
 
-TCP_INFO_UNITS: dict[str, str] = {
-    "state": "enum",
-    "ca_state": "enum",
-    "retransmits": "count",
-    "probes": "count",
-    "backoff": "count",
-    "options": "flags",
-    "wscale": "flags",
-    "app_limited": "flags",
-    "rto": "us",
-    "ato": "us",
-    "snd_mss": "bytes",
-    "rcv_mss": "bytes",
-    "unacked": "segments",
-    "sacked": "segments",
-    "lost": "segments",
-    "retrans": "segments",
-    "fackets": "segments",
-    "last_data_sent": "ms",
-    "last_ack_sent": "ms",
-    "last_data_recv": "ms",
-    "last_ack_recv": "ms",
-    "pmtu": "bytes",
-    "rcv_ssthresh": "bytes",
-    "rtt": "us",
-    "rttvar": "us",
-    "snd_ssthresh": "segments",
-    "snd_cwnd": "segments",
-    "advmss": "bytes",
-    "reordering": "segments",
-    "rcv_rtt": "us",
-    "rcv_space": "bytes",
-    "total_retrans": "segments",
-    "pacing_rate": "bytes/s",
-    "max_pacing_rate": "bytes/s",
-    "bytes_acked": "bytes",
-    "bytes_received": "bytes",
-    "segs_out": "segments",
-    "segs_in": "segments",
-    "notsent_bytes": "bytes",
-    "min_rtt": "us",
-    "data_segs_in": "segments",
-    "data_segs_out": "segments",
-    "delivery_rate": "bytes/s",
-    "busy_time": "us",
-    "rwnd_limited": "us",
-    "sndbuf_limited": "us",
-    "delivered": "segments",
-    "delivered_ce": "segments",
-    "bytes_sent": "bytes",
-    "bytes_retrans": "bytes",
-    "dsack_dups": "count",
-    "reord_seen": "count",
-    "rcv_ooopack": "count",
-    "snd_wnd": "bytes",
-    "rcv_wnd": "bytes",
-    "rehash": "count",
-    "total_rto": "count",
-    "total_rto_recoveries": "count",
-    "total_rto_time": "ms",
-}
-
-TCP_INFO_FORMAT = "=" + "".join(fmt for _, fmt in TCP_INFO_FIELDS)
+TCP_INFO_UNITS = {name: unit for name, _, unit in TCP_INFO_FIELDS}
+TCP_INFO_FORMAT = "=" + "".join(fmt for _, fmt, _ in TCP_INFO_FIELDS)
 STRUCT_SIZE = struct.calcsize(TCP_INFO_FORMAT)
+assert STRUCT_SIZE == 248, f"unexpected tcp_info size: {STRUCT_SIZE}"
 
 # Ask for more than the struct we know about so a newer kernel never silently truncates.
 REQUEST_SIZE = 2 * STRUCT_SIZE
@@ -155,29 +95,15 @@ TCP_CONGESTION_NAME_SIZE = 16
 type TcpInfo = dict[str, int | None]
 
 
-def build_layout() -> tuple[tuple[str, str, int], ...]:
-    layout: list[tuple[str, str, int]] = []
-    offset = 0
-
-    for name, fmt in TCP_INFO_FIELDS:
-        layout.append((name, fmt, offset))
-        offset += struct.calcsize(fmt)
-
-    return tuple(layout)
-
-
-TCP_INFO_LAYOUT = build_layout()
-
-assert STRUCT_SIZE == 248, f"unexpected tcp_info size: {STRUCT_SIZE}"
-assert set(TCP_INFO_UNITS) == {name for name, _ in TCP_INFO_FIELDS}, "units table out of sync"
-
-
 def parse_tcp_info(data: bytes) -> TcpInfo:
     info: TcpInfo = {}
+    offset = 0
 
-    for name, fmt, offset in TCP_INFO_LAYOUT:
-        end = offset + struct.calcsize(fmt)
-        info[name] = struct.unpack_from(fmt, data, offset)[0] if end <= len(data) else None
+    for name, fmt, _ in TCP_INFO_FIELDS:
+        end = offset + struct.calcsize("=" + fmt)
+        # A field past the end of the returned buffer is absent on this (older) kernel.
+        info[name] = struct.unpack_from("=" + fmt, data, offset)[0] if end <= len(data) else None
+        offset = end
 
     return info
 

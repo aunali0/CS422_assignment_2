@@ -1,4 +1,3 @@
-import csv
 import importlib.metadata
 import json
 import logging
@@ -10,9 +9,11 @@ from dataclasses import asdict, replace
 from pathlib import Path
 
 from client import ClientConfig, try_run_test
+from comparison_plots import build_report
 from destinations import load_servers
-from measurement import RunMetadata, Sample, create_run_directory, save_run
-from tcp_info import TCP_INFO_FIELDS, get_tcp_algorithm, get_tcp_info
+from measurement import create_run_directory, load_run, save_run
+from reviewed_report import build_reviewed_report
+from tcp_info import get_tcp_algorithm, get_tcp_info
 
 
 def preflight(algorithms: list[str]) -> dict:
@@ -49,44 +50,8 @@ def write_manifest(path: Path, manifest: dict) -> None:
     temporary.replace(path)
 
 
-def load_run(path: Path) -> tuple[RunMetadata, list[Sample]]:
-    data = json.loads((path.parent / "test-metadata.json").read_text())
-    meta = RunMetadata(
-        data["run_id"],
-        data["host"],
-        data["port"],
-        data["algorithm"],
-        data["duration_s"],
-        data["goodput_interval_s"],
-        data["started_at"],
-        data["host_kernel"],
-        data["tcp_info_bytes"],
-    )
-
-    def integer(row, key):
-        return int(row[key]) if row.get(key) else None
-
-    with path.open(newline="") as stream:
-        samples = [
-            Sample(
-                time=float(row["time"]),
-                interval=float(row["interval"]),
-                goodput=float(row["goodput"]),
-                bytes_acked_delta=int(row["bytes_acked_delta"]),
-                retrans_delta=integer(row, "retrans_delta"),
-                bytes_retrans_delta=integer(row, "bytes_retrans_delta"),
-                data_segs_out_delta=integer(row, "data_segs_out_delta"),
-                delivered_delta=integer(row, "delivered_delta"),
-                info={name: integer(row, f"tcpi_{name}") for name, _ in TCP_INFO_FIELDS},
-            )
-            for row in csv.DictReader(stream)
-        ]
-    return meta, samples
-
-
 def analyze_manifest(path: Path) -> None:
-    from comparison_plots import build_report
-
+    """Rebuild every comparison output from the saved measurements; no network needed."""
     manifest = json.loads(path.read_text())
     runs = [
         (test, load_run(path.parent / test["csv"]))
@@ -94,8 +59,6 @@ def analyze_manifest(path: Path) -> None:
         if test["status"] == "ok"
     ]
     build_report(manifest, runs, path.parent)
-    from reviewed_report import build_reviewed_report
-
     build_reviewed_report(manifest, runs, path.parent)
 
 

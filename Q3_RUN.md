@@ -43,12 +43,11 @@ mkdir -p results
 docker run --rm --network host -v "$PWD/results:/results" cs422-a2 compare -s iperf3-servers.csv -c 3 -t 60 -g 1 -r 3 --seed 422 --run-id q3-docker -o /results
 ```
 
-The image uses `ubuntu:24.04` and Python 3.12. Containers share the host kernel,
+The image uses `ubuntu:24.04` and Python 3.12 with the same matplotlib (3.11.2) and
+pydantic (2.13.5) versions as the saved experiment. Containers share the host kernel,
 so the host must support the requested algorithms. The saved experiment used WSL2
-kernel `6.18.33.2-microsoft-standard-WSL2`, Python 3.14.8, matplotlib 3.11.2, and
-pydantic 2.13.5. `requirements.txt` pins a different dependency environment. The
-saved manifest does not establish whether Docker was used or identify the BBR
-version.
+kernel `6.18.33.2-microsoft-standard-WSL2` and Python 3.14.8. The saved manifest does
+not establish whether Docker was used or identify the BBR version.
 
 ## Outputs and offline analysis
 
@@ -61,7 +60,9 @@ Each experiment is under `results/algorithm-comparisons/<run-id>/`:
 | `tcp-traces/<test>/` | Raw samples, metadata with units, and individual plots |
 | `reports/per-test-statistics.csv` | Goodput, RTT, window, and retransmission statistics for every successful run |
 | `reports/destination-algorithm-statistics.csv` | Means and variation across matched repetitions |
+| `plots/destination-goodput-over-time.pdf`, `reports/destination-goodput-statistics.pdf` | Q1 goodput plot and min/median/mean/P95 table for the complete destinations |
 | `plots/algorithm-metrics-*.pdf` | Representative destination, all algorithms, common axis scales |
+| `plots/destinations/<destination>/` | The same comparison for every complete destination |
 | `reports/algorithm-comparison-report.*` | Generated detailed report and plots |
 | `reports/reviewed-algorithm-comparison.pdf` | Report generated from `Q3_REPORT.md` for the saved `q3-test` experiment |
 
@@ -69,7 +70,7 @@ The first complete destination is the representative; it is not selected for hig
 throughput. To rebuild outputs from saved measurements without contacting servers:
 
 ```sh
-python main.py analyze --manifest results/algorithm-comparisons/q3-test/manifest.json
+python main.py analyze results/algorithm-comparisons/q3-test
 ```
 
 This command overwrites the generated reports and plots.

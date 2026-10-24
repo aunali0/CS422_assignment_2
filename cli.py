@@ -3,43 +3,37 @@ from math import isfinite
 from pathlib import Path
 
 
-def to_int(value: str) -> int:
+def number(kind: type[int] | type[float], value: str) -> int | float:
     try:
-        return int(value)
+        result = kind(value)
     except ValueError:
-        raise argparse.ArgumentTypeError("must be an integer") from None
-
-
-def to_float(value: str) -> float:
-    try:
-        return float(value)
-    except ValueError:
-        raise argparse.ArgumentTypeError("must be a float") from None
-
-
-def port_type(value: str) -> int:
-    port = to_int(value)
-
-    if not 1 <= port <= 65535:
-        raise argparse.ArgumentTypeError("port must be between 1 and 65535 (inclusive)")
-
-    return port
-
-
-def check_positive[T: (int, float)](num: T) -> T:
-    if isinstance(num, float) and not isfinite(num):
+        raise argparse.ArgumentTypeError(
+            f"must be {'an integer' if kind is int else 'a number'}"
+        ) from None
+    if not isfinite(result):
         raise argparse.ArgumentTypeError("must be finite")
-    if num <= 0:
-        raise argparse.ArgumentTypeError("must be positive")
-    return num
+    return result
 
 
 def positive_int_type(value: str) -> int:
-    return check_positive(to_int(value))
+    result = int(number(int, value))
+    if result <= 0:
+        raise argparse.ArgumentTypeError("must be positive")
+    return result
 
 
 def positive_float_type(value: str) -> float:
-    return check_positive(to_float(value))
+    result = float(number(float, value))
+    if result <= 0:
+        raise argparse.ArgumentTypeError("must be positive")
+    return result
+
+
+def port_type(value: str) -> int:
+    port = int(number(int, value))
+    if not 1 <= port <= 65535:
+        raise argparse.ArgumentTypeError("port must be between 1 and 65535 (inclusive)")
+    return port
 
 
 def add_client_args(parser: argparse.ArgumentParser) -> None:
@@ -106,14 +100,28 @@ def add_client_args(parser: argparse.ArgumentParser) -> None:
 
 
 def add_analyze_command(commands):
-    analyze = commands.add_parser("analyze", help="Rebuild comparison plots and report offline")
-    analyze.add_argument("--manifest", type=Path, required=True)
+    analyze = commands.add_parser(
+        "analyze", help="Rebuild plots, tables, and reports from saved measurements (offline)"
+    )
+    analyze.add_argument(
+        "path",
+        type=Path,
+        help="A run directory under results/, or a comparison's manifest.json",
+    )
 
 
 def add_compare_command(commands):
-    compare = commands.add_parser("compare", help="Repeat matched congestion control experiments")
-    compare.add_argument("-s", "--servers", type=Path, required=True)
-    compare.add_argument("-c", "--count", type=positive_int_type, default=10)
+    compare = commands.add_parser(
+        "compare",
+        help="Compare congestion control algorithms with repeated runs on the same destinations",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    compare.add_argument(
+        "-s", "--servers", type=Path, required=True, metavar="CSV", help="iPerf3 server list"
+    )
+    compare.add_argument(
+        "-c", "--count", type=positive_int_type, default=10, help="Number of destinations"
+    )
     compare.add_argument(
         "-a",
         "--attempts",
@@ -121,9 +129,19 @@ def add_compare_command(commands):
         default=3,
         help="Maximum candidate destinations per requested destination",
     )
-    compare.add_argument("-r", "--repetitions", type=positive_int_type, default=3)
-    compare.add_argument("--algorithms", nargs="+", default=["cubic", "reno", "bbr"])
-    compare.add_argument("--seed", type=int, default=422)
+    compare.add_argument(
+        "-r",
+        "--repetitions",
+        type=positive_int_type,
+        default=3,
+        help="Runs per algorithm and destination",
+    )
+    compare.add_argument(
+        "--algorithms", nargs="+", default=["cubic", "reno", "bbr"], help="Algorithms to compare"
+    )
+    compare.add_argument(
+        "--seed", type=int, default=422, help="Seed for destination and order shuffling"
+    )
     compare.add_argument(
         "--pause", type=positive_float_type, default=2, help="Seconds between tests"
     )

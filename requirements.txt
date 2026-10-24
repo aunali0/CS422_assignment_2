@@ -1,2 +1,2 @@
-matplotlib==3.9.2
-pydantic==2.12.5
+matplotlib==3.11.2
+pydantic==2.13.5

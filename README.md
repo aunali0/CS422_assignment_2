@@ -29,10 +29,9 @@ python3 -m venv .venv
 python -m pip install -r requirements.txt
 ```
 
-Use `python` from the activated environment for the examples. `uv run` is another
-option; it uses the dependencies in `pyproject.toml`, which differ from the pinned
-`requirements.txt` environment. Exact versions for the saved Q3 run are recorded
-in its manifest and [Q3_RUN.md](Q3_RUN.md).
+Use `python` from the activated environment for the examples. `uv run` also works;
+`requirements.txt`, `pyproject.toml`, and `uv.lock` pin the same versions used for
+the saved Q3 run (matplotlib 3.11.2, pydantic 2.13.5).
 
 ## Commands
 
@@ -59,10 +58,12 @@ Compare CUBIC, Reno, and BBR with three repetitions per destination:
 python main.py compare -s iperf3-servers.csv -c 3 -t 60 -g 1 -r 3 --seed 422 --run-id q3-repeat
 ```
 
-Analyze existing measurements without contacting servers:
+Rebuild every plot, table, and report from saved measurements without contacting
+servers (works for any run directory, including on macOS):
 
 ```sh
-python main.py analyze --manifest results/algorithm-comparisons/q3-test/manifest.json
+python main.py analyze results/algorithm-comparisons/q3-test
+python main.py analyze results/single-server-tests/20261018T035817Z
 ```
 
 Analysis overwrites generated reports and plots. See [Q3_RUN.md](Q3_RUN.md) for
@@ -106,18 +107,21 @@ Within it:
 | `tcp-traces/<test>/test-metadata.json` | Destination, actual algorithm, kernel, settings, and column units |
 | `tcp-traces/<test>/tcp-metrics-over-time.pdf` | Window, RTT, retransmissions, and goodput over time |
 | `tcp-traces/<test>/tcp-metrics-vs-goodput.pdf` | Window, RTT, and retransmissions plotted against goodput |
-| `plots/destination-goodput-over-time.pdf` | Destination goodput plots (`destinations`) |
-| `reports/destination-goodput-statistics.pdf` | Minimum, median, mean, and P95 goodput (`destinations`) |
-| `plots/algorithm-metrics-*.pdf` | Algorithms compared at the representative destination |
+| `plots/destination-goodput-over-time.pdf` | Goodput over time, one panel per destination (Q1) |
+| `reports/destination-goodput-statistics.pdf` | Minimum, median, mean, and P95 goodput per destination and algorithm (Q1) |
+| `plots/algorithm-metrics-*.pdf` | Algorithms compared at the representative destination (Q3) |
+| `plots/destinations/<destination>/` | The same comparison for every complete destination |
 | `reports/per-test-statistics.csv` | Statistics for every successful comparison test |
 | `reports/destination-algorithm-statistics.csv` | Statistics across matched repetitions |
 | `reports/algorithm-comparison-report.*` | Detailed comparison report and plots |
 | `reports/reviewed-algorithm-comparison.pdf` | Q3 report generated from `Q3_REPORT.md` for the saved `q3-test` experiment |
 
 Test folder names identify the run and destination; comparison names also include
-the algorithm and repetition. `destinations` produces TCP plots for the server
-with the highest median goodput; this is a selection rule, not proof that the
-server was free of rate limits. `compare` uses the first complete destination.
+the algorithm and repetition. Every test gets its own TCP plots. `destinations` logs
+the server with the highest median goodput as the representative; this is a selection
+rule, not proof that the server was free of rate limits. `compare` uses the first
+complete destination. For comparisons, the Q1 plot and table cover the complete
+destinations only.
 
 The October 5 goodput PDFs remain under `results/destination-tests/20261005/`.
 Their raw samples are not available in this repository.
@@ -157,7 +161,7 @@ Check `cwnd`, `rtt`, `bytes_acked`, and retransmissions against nearby CSV sampl
 | --- | --- |
 | `main.py`, `cli.py` | Entry point and arguments |
 | `client.py`, `protocol.py` | Transfer loop and iperf3 message exchange |
-| `tcp_info.py`, `measurement.py` | TCP decoding, sample records, and persistence |
+| `tcp_info.py`, `measurement.py` | TCP decoding, sample records, and saving/loading traces |
 | `destinations.py` | Random destinations and replacement attempts |
 | `comparison.py` | Repetitions, algorithm selection, and experiment manifest |
 | `plots.py`, `comparison_plots.py`, `reviewed_report.py` | Plots, statistics, and reports |

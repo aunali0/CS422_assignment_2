@@ -10,8 +10,9 @@ from unittest.mock import MagicMock, patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from client import ClientConfig, TestResult, data_connection
-from comparison import load_run, preflight, run_comparison
-from comparison_plots import build_report, percentile, run_statistics, plot_comparison
+from comparison import preflight, run_comparison
+from measurement import load_run, percentile
+from comparison_plots import build_report, run_statistics, plot_comparison
 from destinations import Server, run_destinations
 import matplotlib.pyplot as plt
 from reviewed_report import build_reviewed_report
@@ -93,7 +94,7 @@ class ComparisonTests(unittest.TestCase):
                 if len(calls) == 2:
                     return None
                 return TestResult(replace(meta, host=host, port=port, algorithm=cfg.algorithm,
-                                          run_id=run_id), samples, 1)
+                                          run_id=run_id), samples)
             with patch("comparison.preflight", return_value={"kernel": "test"}), patch(
                 "comparison.try_run_test", side_effect=runner
             ), patch("comparison.time.sleep"), patch("comparison.analyze_manifest"):
@@ -170,8 +171,8 @@ class ComparisonTests(unittest.TestCase):
             "comparison_plots.plt.close", side_effect=capture
         ):
             out = Path(directory)
-            plot_comparison(runs, ["cubic", "reno", "bbr"], meta.destination(), MagicMock(),
-                            out / "timeseries.pdf", out / "scatter.pdf")
+            plot_comparison(runs, ["cubic", "reno", "bbr"], meta.destination(),
+                            out / "timeseries.pdf", out / "scatter.pdf", MagicMock())
         timeseries, scatter = figures
         self.assertGreaterEqual(timeseries.axes[0].get_ylim()[1], 9000)
         self.assertGreaterEqual(timeseries.axes[3].get_ylim()[1], 400)
