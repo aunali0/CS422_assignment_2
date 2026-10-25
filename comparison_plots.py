@@ -328,8 +328,9 @@ def build_report(manifest, runs, out: Path):
         "sample toward reliable servers. Differences of the same magnitude as run variability are "
         "not strong evidence of an advantage. Establishing operating regimes causally requires "
         "controlled bottleneck bandwidth, RTT, queue size, and loss; public traces alone are insufficient.",
-        "AI assistance: an AI coding assistant helped implement experiment automation, plotting, "
-        "and draft the algorithm design and explanatory text.",
+        "AI assistance: we used AI tools to generate and revise substantial portions of the "
+        "Python client, experiment automation, tests, and plotting/reporting code, "
+        "and to help refine the controller design, analysis, and explanations.",
     ]
     (reports_dir / "algorithm-comparison-report.md").write_text(
         "# TCP congestion control comparison\n\n" + "\n\n".join(paragraphs) + "\n"

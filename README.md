@@ -8,6 +8,12 @@ During transfer it reads TCP statistics from the data socket and records goodput
 congestion window, RTT, and retransmissions. The commands produce raw measurements,
 PDF plots, and summary tables.
 
+## AI acknowledgement
+
+We used AI tools to generate and revise substantial portions of the Python
+client, experiment automation, tests, and plotting/reporting code, and to help
+refine the controller design, analysis, and explanations.
+
 ## Start here
 
 - [Report PDF](report/CS422-Assignment-2-Report.pdf): the full submission (Q1–Q3), built by `python main.py report` from [REPORT.md](REPORT.md) and the saved measurements.
@@ -140,9 +146,6 @@ the server with the highest median goodput as the representative; this is a sele
 rule, not proof that the server was free of rate limits. `compare` uses the first
 complete destination. For comparisons, the Q1 plot and table cover the complete
 destinations only.
-
-The October 5 goodput PDFs remain under `results/destination-tests/20261005/`.
-Their raw samples are not available in this repository.
 
 ## Measurements
 

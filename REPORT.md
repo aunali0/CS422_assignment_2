@@ -151,4 +151,4 @@ Everything runs from `main.py`; the README documents the commands and options (`
 
 [3] Google BBR documentation: [github.com/google/bbr](https://github.com/google/bbr/blob/master/Documentation/bbr-faq.md)
 
-AI assistance was used for automation, plotting, checking, and drafting the analysis and design. A teammate collected the measurements on Linux/WSL2.
+We used AI tools to generate and revise substantial portions of the Python client, experiment automation, tests, and plotting/reporting code, and to help refine the controller design, analysis, and explanations.
