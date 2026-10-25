@@ -1,8 +1,7 @@
 # Q3(b): RTT, goodput, and loss based window control
 
 This is the selected proposal for Assignment 2, Question 3(b), and the starting
-point for Assignment 3. It has not been implemented or evaluated. The saved
-experiments compare CUBIC, Reno, and BBR; they do not test this controller.
+point for Assignment 3.
 
 ## Idea
 
