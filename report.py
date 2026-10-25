@@ -120,7 +120,7 @@ def table_q1_attempts(data: Data) -> list[list[str]]:
     for destination, error in re.findall(r"\[error\] (\S+) \| (\w+(?:: Unexpected state: \w+)?)", log):
         causes[destination][error.replace("ConnectionError: Unexpected state: ", "")] += 1
 
-    rows = [["Candidate (in order)", "OK", "Failed", "Failure causes", "Used"]]
+    rows = [["Candidate (in order)", "Passed", "Failed", "Failure causes", "Used"]]
     outcomes: dict[str, Counter[str]] = {}
     for test in data.manifest["tests"]:
         outcomes.setdefault(test["destination"], Counter())[test["status"]] += 1
