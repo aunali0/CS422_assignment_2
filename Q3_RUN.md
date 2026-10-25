@@ -78,5 +78,6 @@ This command overwrites the generated reports and plots.
 
 ## Submission
 
-For Assignment 2, combine Q1/Q2 and Q3 into one PDF with the plots, interpretations,
-repository and code links, reproduction instructions, and a brief AI acknowledgement.
+The submission PDF is `report/CS422-Assignment-2-Report.pdf`. It includes Q1–Q3,
+plots, tables, code links, and the AI acknowledgement, and is built from `REPORT.md`
+and the saved measurements with `python main.py report`.

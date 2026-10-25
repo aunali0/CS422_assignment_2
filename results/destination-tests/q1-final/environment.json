@@ -1,0 +1,16 @@
+{
+  "kernel": "6.18.33.2-microsoft-standard-WSL2",
+  "python": "3.14.8",
+  "dependencies": {
+    "matplotlib": "3.11.2",
+    "pydantic": "2.13.5",
+    "reportlab": "5.1.0"
+  },
+  "config": {
+    "algorithm": "cubic",
+    "duration_s": 60,
+    "goodput_interval_s": 1,
+    "requested_destinations": 3,
+    "attempts_per_destination": 3
+  }
+}

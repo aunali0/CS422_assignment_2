@@ -1,0 +1,21 @@
+[error] speedtest.sin1.sg.leaseweb.net:5201 | ConnectionError: Unexpected state: ACCESS_DENIED (-0x1); expected PARAM_EXCHANGE (0x09)
+[destinations] Server 1/3 | attempt 1/3 | speedtest.sin1.sg.leaseweb.net:5201 | failed
+[error] 160.242.19.254:9205 | ConnectionRefusedError: [Errno 111] Connection refused
+[destinations] Server 1/3 | attempt 2/3 | 160.242.19.254:9205 | failed
+[destinations] Server 1/3 | attempt 3/3 | speedtest.ams1.nl.leaseweb.net:5201 | passed
+[test] Measurements saved to results/destination-tests/q1-final/tcp-traces/q1-final-d1_speedtest.ams1.nl.leaseweb.net_5201/tcp-samples.csv
+[destinations] Server 2/3 | attempt 1/3 | speedtest1.flowjamaica.com:5506 | passed
+[test] Measurements saved to results/destination-tests/q1-final/tcp-traces/q1-final-d2_speedtest1.flowjamaica.com_5506/tcp-samples.csv
+[destinations] Server 3/3 | attempt 1/3 | t5.cscs.ch:5201 | passed
+[test] Measurements saved to results/destination-tests/q1-final/tcp-traces/q1-final-d3_t5.cscs.ch_5201/tcp-samples.csv
+[destinations] Selected 3/3 servers
+[destinations] Summary saved to results/destination-tests/q1-final/reports/destination-goodput-statistics.pdf
+[destinations] Goodput plot saved to results/destination-tests/q1-final/plots/destination-goodput-over-time.pdf
+[test] Time series saved to results/destination-tests/q1-final/tcp-traces/q1-final-d1_speedtest.ams1.nl.leaseweb.net_5201/tcp-metrics-over-time.pdf
+[test] Scatter plots saved to results/destination-tests/q1-final/tcp-traces/q1-final-d1_speedtest.ams1.nl.leaseweb.net_5201/tcp-metrics-vs-goodput.pdf
+[test] Time series saved to results/destination-tests/q1-final/tcp-traces/q1-final-d2_speedtest1.flowjamaica.com_5506/tcp-metrics-over-time.pdf
+[test] Scatter plots saved to results/destination-tests/q1-final/tcp-traces/q1-final-d2_speedtest1.flowjamaica.com_5506/tcp-metrics-vs-goodput.pdf
+[test] Time series saved to results/destination-tests/q1-final/tcp-traces/q1-final-d3_t5.cscs.ch_5201/tcp-metrics-over-time.pdf
+[test] Scatter plots saved to results/destination-tests/q1-final/tcp-traces/q1-final-d3_t5.cscs.ch_5201/tcp-metrics-vs-goodput.pdf
+[destinations] Representative destination: speedtest.ams1.nl.leaseweb.net:5201
+[test] Run ID: q1-final

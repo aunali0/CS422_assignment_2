@@ -12,7 +12,7 @@ PDF plots, and summary tables.
 
 - [Report PDF](report/CS422-Assignment-2-Report.pdf): the full submission (Q1–Q3), built by `python main.py report` from [REPORT.md](REPORT.md) and the saved measurements.
 - [Q3_RUN.md](Q3_RUN.md): comparison, Docker, and reproduction commands.
-- [Q3_DESIGN.md](Q3_DESIGN.md): selected controller proposal; not implemented or tested.
+- [Q3_DESIGN.md](Q3_DESIGN.md): controller design for Q3(b), implemented as `a3_cc` in Assignment 3.
 - [Saved results](results/algorithm-comparisons/q3-test/): three destinations, three algorithms, three repetitions.
 
 ## Install
@@ -50,6 +50,17 @@ Busy, unreachable, or rejecting servers are replaced within the attempt limit.
 The command reports how many destinations succeeded. The server list comes from
 [iperf3serverlist.net](https://iperf3serverlist.net/). The CSV has `IP/HOST` and
 `PORT` columns; for a port range, the client uses its first port.
+
+The report's Q1 measurements are a separate CUBIC destination experiment saved
+under `results/destination-tests/q1-final/`. To repeat it with a fresh run ID:
+
+```sh
+python main.py destinations -s iperf3-servers.csv -c 3 -a 3 -t 60 -g 1 --algorithm cubic --run-id q1-repeat
+```
+
+The saved run includes raw traces, plots, the goodput summary, the input server
+list, and an experiment log. The report generator uses this dataset for Q1 and
+the existing single-server and comparison datasets for Q2 and Q3.
 
 Compare CUBIC, Reno, and BBR with three repetitions per destination:
 

@@ -194,11 +194,26 @@ class ComparisonTests(unittest.TestCase):
 class ReportTests(unittest.TestCase):
     def test_report_builds_from_saved_measurements(self):
         import report
+        data = report.Data()
+        saved = report.load_runs(report.Q1_DIR)
+        self.assertTrue(data.q1_runs)
+        self.assertEqual([meta.run_id for meta, _ in data.q1_runs],
+                         [meta.run_id for meta, _ in saved])
+        self.assertEqual({meta.algorithm for meta, _ in data.q1_runs}, {"cubic"})
+        self.assertTrue(all(meta.duration == 60 and meta.goodput_interval == 1
+                            for meta, _ in data.q1_runs))
+        self.assertEqual(len({meta.destination() for meta, _ in data.q1_runs}), len(data.q1_runs))
+        summary = report.table_q1_summary(data)
+        self.assertEqual(len(summary), len(data.q1_runs) + 1)
+        self.assertTrue(all(row[1:3] == ["cubic", "1"] for row in summary[1:]))
         with tempfile.TemporaryDirectory() as directory, patch.object(
             report, "FIGURES_DIR", Path(directory) / "figures"
-        ):
+        ), patch.object(report, "plot_destinations", wraps=report.plot_destinations) as plot:
             output = report.build_report(Path(directory) / "report.pdf")
             self.assertGreater(output.stat().st_size, 100_000)
+            plot.assert_called_once()
+            self.assertEqual([meta.run_id for meta, _ in plot.call_args.args[0]],
+                             [meta.run_id for meta, _ in data.q1_runs])
 
     def test_code_links_resolve_to_the_matching_line(self):
         import report

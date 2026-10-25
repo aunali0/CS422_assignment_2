@@ -1,0 +1,2 @@
+Working directory: repository root
+uv run python main.py destinations -s iperf3-servers.csv -c 3 -a 3 -t 60 -g 1 --algorithm cubic --run-id q1-final

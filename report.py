@@ -48,10 +48,11 @@ REPOSITORY = "https://github.com/aunali0/CS422_assignment_2"
 
 # The saved experiments the report describes.
 COMPARISON_DIR = ROOT / "results" / "algorithm-comparisons" / "q3-test"
+Q1_DIR = ROOT / "results" / "destination-tests" / "q1-final"
 Q2_DIR = ROOT / "results" / "single-server-tests" / "20261018T035817Z"
 
 ALGORITHMS = ["cubic", "reno", "bbr"]
-# tcp_info fields this project relies on, shown in the Q2(a) decoding table.
+# Fields included in the optional {{table:tcp_info_layout}} table.
 DECODED_FIELDS = (
     "snd_mss", "unacked", "lost", "rtt", "rttvar", "snd_ssthresh", "snd_cwnd", "total_retrans",
     "pacing_rate", "bytes_acked", "notsent_bytes", "min_rtt", "data_segs_out", "delivery_rate",
@@ -66,7 +67,7 @@ class Data:
     def __init__(self) -> None:
         self.manifest, self.tests = load_comparison(COMPARISON_DIR / "manifest.json")
         self.matched = matched_destinations(self.manifest, self.tests)
-        self.comparison_runs: list[Run] = [run for _, run in self.tests]
+        self.q1_runs: list[Run] = load_runs(Q1_DIR)
         self.q2_meta, self.q2_samples = load_runs(Q2_DIR)[0]
 
 
@@ -74,7 +75,7 @@ class Data:
 
 
 def figure_q1_goodput(data: Data, path: Path) -> None:
-    plot_destinations(data.comparison_runs, path)
+    plot_destinations(data.q1_runs, path)
 
 
 def figure_q2_time_series(data: Data, path: Path) -> None:
@@ -106,8 +107,8 @@ FIGURES = {
 
 
 def table_q1_summary(data: Data) -> list[list[str]]:
-    # Q1(c): min / median / mean / P95 per destination and algorithm, repetitions pooled.
-    return [SUMMARY_COLUMNS, *summary_rows(data.comparison_runs)]
+    # Q1(c): CUBIC min / median / mean / P95 for each destination test.
+    return [SUMMARY_COLUMNS, *summary_rows(data.q1_runs)]
 
 
 def table_tcp_info_layout(data: Data) -> list[list[str]]:
