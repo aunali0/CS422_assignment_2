@@ -21,6 +21,8 @@ from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (
     Image,
     KeepTogether,
@@ -205,7 +207,7 @@ def inline(text: str, commit: str) -> str:
     code_spans: list[str] = []
 
     def stash(match: re.Match) -> str:
-        code_spans.append(f'<font face="Courier" size="9">{escape(match[1])}</font>')
+        code_spans.append(f'<font face="Mono" size="8.5">{escape(match[1])}</font>')
         return f"\x00{len(code_spans) - 1}\x00"
 
     text = re.sub(r"`([^`]+)`", stash, text)
@@ -221,24 +223,36 @@ def inline(text: str, commit: str) -> str:
     return re.sub(r"\x00(\d+)\x00", lambda m: code_spans[int(m[1])], text)
 
 
+def register_fonts() -> None:
+    # Embed matplotlib's STIX (a Times look-alike) and DejaVu Sans Mono: unlike the built-in
+    # PDF fonts they cover symbols such as Δ, β, ≈, −, and →.
+    fonts = Path(matplotlib.get_data_path()) / "fonts" / "ttf"
+    for name, file in (("Serif", "STIXGeneral"), ("Serif-Bold", "STIXGeneralBol"),
+                       ("Serif-Italic", "STIXGeneralItalic"), ("Serif-BoldItalic", "STIXGeneralBolIta"),
+                       ("Mono", "DejaVuSansMono")):  # fmt: skip
+        pdfmetrics.registerFont(TTFont(name, fonts / f"{file}.ttf"))
+    pdfmetrics.registerFontFamily("Serif", normal="Serif", bold="Serif-Bold",
+                                  italic="Serif-Italic", boldItalic="Serif-BoldItalic")  # fmt: skip
+
+
 def styles() -> dict[str, ParagraphStyle]:
     base = getSampleStyleSheet()
-    body = ParagraphStyle("body", parent=base["BodyText"], fontName="Times-Roman", fontSize=10.5,
+    body = ParagraphStyle("body", parent=base["BodyText"], fontName="Serif", fontSize=10.5,
                           leading=13.8, spaceAfter=6)  # fmt: skip
     return {
-        "title": ParagraphStyle("title", parent=body, fontName="Times-Bold", fontSize=18,
+        "title": ParagraphStyle("title", parent=body, fontName="Serif-Bold", fontSize=18,
                                 leading=22, alignment=TA_CENTER, spaceAfter=4),
         "subtitle": ParagraphStyle("subtitle", parent=body, fontSize=12, alignment=TA_CENTER,
                                    spaceAfter=12),
-        "h2": ParagraphStyle("h2", parent=body, fontName="Times-Bold", fontSize=14, leading=17,
+        "h2": ParagraphStyle("h2", parent=body, fontName="Serif-Bold", fontSize=14, leading=17,
                              spaceBefore=12, spaceAfter=6, textColor=colors.HexColor("#20344b")),
-        "h3": ParagraphStyle("h3", parent=body, fontName="Times-Bold", fontSize=11.5, leading=14,
+        "h3": ParagraphStyle("h3", parent=body, fontName="Serif-Bold", fontSize=11.5, leading=14,
                              spaceBefore=8, spaceAfter=4),
         "body": body,
         "cell": ParagraphStyle("cell", parent=body, fontSize=8.5, leading=10.5, spaceAfter=0),
         "caption": ParagraphStyle("caption", parent=body, fontSize=9, leading=11.5,
                                   textColor=colors.HexColor("#3b4654"), spaceAfter=10),
-        "code": ParagraphStyle("code", parent=body, fontName="Courier", fontSize=8.3, leading=10.2,
+        "code": ParagraphStyle("code", parent=body, fontName="Mono", fontSize=8.3, leading=10.2,
                                leftIndent=8, backColor=colors.HexColor("#f4f6f8"), borderPadding=5,
                                spaceBefore=4, spaceAfter=10),
     }  # fmt: skip
@@ -269,7 +283,7 @@ def column_widths(rows: list[list[str]], width: float) -> list[float]:
     for i in range(len(rows[0])):
         cells = [plain(row[i]) for row in rows]
         longest_word = max(len(word) for cell in cells for word in cell.split() or [""])
-        weights.append(max(longest_word + 2, min(max(map(len, cells)), 40)))
+        weights.append(max(longest_word + 3, min(max(map(len, cells)), 40)))
     return [width * w / sum(weights) for w in weights]
 
 
@@ -330,6 +344,7 @@ def parse_blocks(markdown: str) -> list[tuple[str, object]]:
 
 def build_report(output: Path = OUTPUT) -> Path:
     matplotlib.rcParams["savefig.dpi"] = 200
+    register_fonts()
     data = Data()
     commit = current_commit()
     st = styles()
@@ -368,7 +383,7 @@ def build_report(output: Path = OUTPUT) -> Path:
             story.append(make_figure(path, caption, st, commit, doc.width, doc.height))
 
     def page_number(canvas, document) -> None:
-        canvas.setFont("Times-Roman", 9)
+        canvas.setFont("Serif", 9)
         canvas.drawRightString(letter[0] - 0.8 * inch, 0.45 * inch, str(document.page))
 
     doc.build(story, onFirstPage=page_number, onLaterPages=page_number)
