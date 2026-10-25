@@ -202,12 +202,13 @@ class ReportTests(unittest.TestCase):
 
     def test_code_links_resolve_to_the_matching_line(self):
         import report
-        url = report.code_link("client.py#def run_test", "abc1234")
+        url = report.code_link("client.py#def run_test")
         line = int(url.rsplit("#L", 1)[1])
         source = (ROOT / "client.py").read_text().splitlines()
         self.assertIn("def run_test", source[line - 1])
+        self.assertIn("/blob/main/client.py", url)
         with self.assertRaises(ValueError):
-            report.code_link("client.py#no such text", "abc1234")
+            report.code_link("client.py#no such text")
 
 
 if __name__ == "__main__":

@@ -68,8 +68,7 @@ python main.py analyze results/single-server-tests/20261018T035817Z
 Analysis overwrites generated reports and plots.
 
 Build the submission PDF (`report/CS422-Assignment-2-Report.pdf`) from `REPORT.md`
-and the saved measurements. Commit and push first: code links are pinned to the
-current commit.
+and the saved measurements. Code links point to the matching lines on `main`.
 
 ```sh
 python main.py report

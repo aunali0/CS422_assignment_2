@@ -3,14 +3,11 @@
 # REPORT.md is ordinary Markdown with three extensions, so all prose lives in one file:
 #   ![Caption](figure:NAME)   a figure generated here from saved data (see FIGURES)
 #   {{table:NAME}}            a table generated here from saved data (see TABLES)
-#   [label](code:FILE#TEXT)   a GitHub link to the first line of FILE containing TEXT,
-#                             pinned to the current commit, so line numbers never go stale
+#   [label](code:FILE#TEXT)   a GitHub link (main branch) to the line of FILE containing TEXT
 # Supported Markdown: #/##/### headings, paragraphs, "- " bullets, ``` code blocks,
 # | pipe | tables |, **bold**, *italic*, `code`, and [links](https://...).
 
 import re
-import subprocess
-from collections import Counter, defaultdict
 from html import escape
 from pathlib import Path
 from statistics import fmean, stdev
@@ -113,24 +110,6 @@ def table_q1_summary(data: Data) -> list[list[str]]:
     return [SUMMARY_COLUMNS, *summary_rows(data.comparison_runs)]
 
 
-def table_q1_attempts(data: Data) -> list[list[str]]:
-    # Q1(b): every candidate destination, its test outcomes, and the logged failure causes.
-    causes: dict[str, Counter[str]] = defaultdict(Counter)
-    log = (COMPARISON_DIR / "experiment.log").read_text()
-    for destination, error in re.findall(r"\[error\] (\S+) \| (\w+(?:: Unexpected state: \w+)?)", log):
-        causes[destination][error.replace("ConnectionError: Unexpected state: ", "")] += 1
-
-    rows = [["Candidate (in order)", "Passed", "Failed", "Failure causes", "Used"]]
-    outcomes: dict[str, Counter[str]] = {}
-    for test in data.manifest["tests"]:
-        outcomes.setdefault(test["destination"], Counter())[test["status"]] += 1
-    for destination, counts in outcomes.items():
-        cause = ", ".join(f"{name} ×{n}" for name, n in causes[destination].most_common())
-        used = "yes" if destination in data.matched else "no (incomplete)"
-        rows.append([destination, str(counts["ok"]), str(counts["failed"]), cause or "–", used])
-    return rows
-
-
 def table_tcp_info_layout(data: Data) -> list[list[str]]:
     # Q2(a): byte offsets of the decoded fields, computed from the same table the decoder uses.
     rows = [["Field", "Offset (bytes)", "Format", "Unit"]]
@@ -142,6 +121,14 @@ def table_tcp_info_layout(data: Data) -> list[list[str]]:
     return rows
 
 
+# Short names used in the Q3 results table and text.
+SHORT_NAMES = {
+    "dal.speedtest.clouvider.net:5200": "Dallas",
+    "speed.netfiber.net.il:5201": "Netfiber",
+    "96.45.41.167:30001": "IP destination",
+}
+
+
 def table_q3_results(data: Data) -> list[list[str]]:
     # Q3(a): per destination and algorithm, mean of the run goodputs ± sample SD across runs.
     rows = [["Destination", "Algorithm", "Goodput (Mbit/s)", "Mean RTT (ms)", "Retrans. (segs)"]]
@@ -151,8 +138,8 @@ def table_q3_results(data: Data) -> list[list[str]]:
             group = [r for r in stats if r["destination"] == destination and r["algorithm"] == algorithm]
             goodput = [r["goodput_weighted_mbps"] for r in group]
             rows.append([
-                destination,
-                algorithm,
+                SHORT_NAMES.get(destination, destination),
+                algorithm.upper() if algorithm != "reno" else "Reno",
                 f"{fmean(goodput):.2f} ± {stdev(goodput):.2f}",
                 f"{fmean(r['rtt_mean_ms'] for r in group):.2f}",
                 str(sum(r["retransmitted_segments"] for r in group)),
@@ -160,23 +147,9 @@ def table_q3_results(data: Data) -> list[list[str]]:
     return rows
 
 
-def table_q3_order(data: Data) -> list[list[str]]:
-    # Q3(a): the exact test order, read from the manifest.
-    rows = [["Destination", "Repetition 1", "Repetition 2", "Repetition 3"]]
-    order: dict[str, dict[int, list[str]]] = defaultdict(lambda: defaultdict(list))
-    for test in data.manifest["tests"]:
-        if test["destination"] in data.matched:
-            order[test["destination"]][test["repetition"]].append(test["requested_algorithm"])
-    for destination in data.matched:
-        rows.append([destination, *(" → ".join(order[destination][r]) for r in (1, 2, 3))])
-    return rows
-
-
 TABLES = {
-    "q1_attempts": table_q1_attempts,
     "q1_summary": table_q1_summary,
     "tcp_info_layout": table_tcp_info_layout,
-    "q3_order": table_q3_order,
     "q3_results": table_q3_results,
 }
 
@@ -184,25 +157,17 @@ TABLES = {
 # ---------------------------------------------------------------- markdown -> PDF
 
 
-def current_commit() -> str:
-    try:
-        return subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, check=True,
-                              capture_output=True, text=True).stdout.strip()  # fmt: skip
-    except (OSError, subprocess.CalledProcessError):
-        return "main"
-
-
-def code_link(target: str, commit: str) -> str:
-    """'client.py#def run_test' -> GitHub URL of the first line containing 'def run_test'."""
+def code_link(target: str) -> str:
+    """'client.py#def run_test' -> GitHub link to the line of client.py containing 'def run_test'."""
     file, _, text = target.partition("#")
     lines = (ROOT / file).read_text().splitlines()
     number = next((i for i, line in enumerate(lines, 1) if text in line), None)
     if number is None:
         raise ValueError(f"REPORT.md links to '{text}', which is not in {file}")
-    return f"{REPOSITORY}/blob/{commit}/{file}#L{number}"
+    return f"{REPOSITORY}/blob/main/{file}#L{number}"
 
 
-def inline(text: str, commit: str) -> str:
+def inline(text: str) -> str:
     """Markdown inline syntax -> ReportLab paragraph markup."""
     code_spans: list[str] = []
 
@@ -214,7 +179,7 @@ def inline(text: str, commit: str) -> str:
     text = escape(text, quote=False)
 
     def link(match: re.Match) -> str:
-        url = code_link(match[2][5:], commit) if match[2].startswith("code:") else match[2]
+        url = code_link(match[2][5:]) if match[2].startswith("code:") else match[2]
         return f'<link href="{escape(url)}" color="#1f5fa8">{match[1]}</link>'
 
     text = re.sub(r"\[([^\]]+)\]\((code:[^)]+|[^)\s]+)\)", link, text)
@@ -258,8 +223,8 @@ def styles() -> dict[str, ParagraphStyle]:
     }  # fmt: skip
 
 
-def make_table(rows: list[list[str]], st: dict, commit: str, width: float) -> Table:
-    cells = [[Paragraph(inline(c, commit) if r else f"<b>{escape(c)}</b>", st["cell"]) for c in row]
+def make_table(rows: list[list[str]], st: dict, width: float) -> Table:
+    cells = [[Paragraph(inline(c) if r else f"<b>{escape(c)}</b>", st["cell"]) for c in row]
              for r, row in enumerate(rows)]  # fmt: skip
     table = Table(cells, repeatRows=1, hAlign="LEFT", colWidths=column_widths(rows, width))
     table.setStyle(TableStyle([
@@ -287,12 +252,12 @@ def column_widths(rows: list[list[str]], width: float) -> list[float]:
     return [width * w / sum(weights) for w in weights]
 
 
-def make_figure(path: Path, caption: str, st: dict, commit: str, frame_w: float, frame_h: float):
+def make_figure(path: Path, caption: str, st: dict, frame_w: float, frame_h: float):
     image = Image(str(path))
     # At most ~3/4 of a page tall, so a figure can share its page with surrounding text.
     scale = min(frame_w / image.imageWidth, 0.74 * frame_h / image.imageHeight)
     image.drawWidth, image.drawHeight = image.imageWidth * scale, image.imageHeight * scale
-    return KeepTogether([image, Spacer(1, 4), Paragraph(inline(caption, commit), st["caption"])])
+    return KeepTogether([image, Spacer(1, 4), Paragraph(inline(caption), st["caption"])])
 
 
 def parse_blocks(markdown: str) -> list[tuple[str, object]]:
@@ -346,7 +311,6 @@ def build_report(output: Path = OUTPUT) -> Path:
     matplotlib.rcParams["savefig.dpi"] = 200
     register_fonts()
     data = Data()
-    commit = current_commit()
     st = styles()
 
     doc = SimpleDocTemplate(str(output), pagesize=letter, title="CS 422 Assignment 2",
@@ -359,33 +323,33 @@ def build_report(output: Path = OUTPUT) -> Path:
     for kind, value in parse_blocks(SOURCE.read_text()):
         if kind == "h1":
             title, _, subtitle = value.partition(" — ")
-            story += [Paragraph(inline(title, commit), st["title"]),
-                      Paragraph(inline(subtitle, commit), st["subtitle"])]  # fmt: skip
+            story += [Paragraph(inline(title), st["title"]),
+                      Paragraph(inline(subtitle), st["subtitle"])]  # fmt: skip
         elif kind in ("h2", "h3"):
-            story.append(Paragraph(inline(value, commit), st[kind]))
+            story.append(Paragraph(inline(value), st[kind]))
         elif kind == "p":
-            story.append(Paragraph(inline(value, commit), st["body"]))
+            story.append(Paragraph(inline(value), st["body"]))
         elif kind == "list":
             story.append(ListFlowable(
-                [ListItem(Paragraph(inline(item, commit), st["body"]), leftIndent=14) for item in value],
+                [ListItem(Paragraph(inline(item), st["body"]), leftIndent=14) for item in value],
                 bulletType="bullet", start="•", leftIndent=14,
             ))  # fmt: skip
         elif kind == "code":
             story.append(Preformatted(value, st["code"]))
         elif kind == "table":
-            story += [make_table(value, st, commit, doc.width), Spacer(1, 8)]
+            story += [make_table(value, st, doc.width), Spacer(1, 8)]
         elif kind == "data_table":
-            story += [make_table(TABLES[value](data), st, commit, doc.width), Spacer(1, 8)]
+            story += [make_table(TABLES[value](data), st, doc.width), Spacer(1, 8)]
         elif kind == "figure":
             name, caption = value
             path = FIGURES_DIR / f"{name}.png"
             FIGURES[name](data, path)
-            story.append(make_figure(path, caption, st, commit, doc.width, doc.height))
+            story.append(make_figure(path, caption, st, doc.width, doc.height))
 
     def page_number(canvas, document) -> None:
         canvas.setFont("Serif", 9)
         canvas.drawRightString(letter[0] - 0.8 * inch, 0.45 * inch, str(document.page))
 
     doc.build(story, onFirstPage=page_number, onLaterPages=page_number)
-    log_message("test", f"Report saved to {output} (code links pinned to commit {commit})")
+    log_message("test", f"Report saved to {output}")
     return output
