@@ -10,11 +10,10 @@ PDF plots, and summary tables.
 
 ## Start here
 
-- [Q3_REPORT.md](Q3_REPORT.md): comparison results, interpretation, and controller design.
+- [Report PDF](report/CS422-Assignment-2-Report.pdf): the full submission (Q1–Q3), built by `python main.py report` from [REPORT.md](REPORT.md) and the saved measurements.
 - [Q3_RUN.md](Q3_RUN.md): comparison, Docker, and reproduction commands.
 - [Q3_DESIGN.md](Q3_DESIGN.md): selected controller proposal; not implemented or tested.
 - [Saved results](results/algorithm-comparisons/q3-test/): three destinations, three algorithms, three repetitions.
-- [Report PDF](results/algorithm-comparisons/q3-test/reports/reviewed-algorithm-comparison.pdf): comparison results, plots, and controller design.
 
 ## Install
 
@@ -66,8 +65,18 @@ python main.py analyze results/algorithm-comparisons/q3-test
 python main.py analyze results/single-server-tests/20261018T035817Z
 ```
 
-Analysis overwrites generated reports and plots. See [Q3_RUN.md](Q3_RUN.md) for
-Docker commands and how failed comparison groups are handled.
+Analysis overwrites generated reports and plots.
+
+Build the submission PDF (`report/CS422-Assignment-2-Report.pdf`) from `REPORT.md`
+and the saved measurements. Commit and push first: code links are pinned to the
+current commit.
+
+```sh
+python main.py report
+```
+
+See [Q3_RUN.md](Q3_RUN.md) for Docker commands and how failed comparison groups are
+handled.
 
 | Option | Default | Meaning |
 | --- | --- | --- |
@@ -114,7 +123,6 @@ Within it:
 | `reports/per-test-statistics.csv` | Statistics for every successful comparison test |
 | `reports/destination-algorithm-statistics.csv` | Statistics across matched repetitions |
 | `reports/algorithm-comparison-report.*` | Detailed comparison report and plots |
-| `reports/reviewed-algorithm-comparison.pdf` | Q3 report generated from `Q3_REPORT.md` for the saved `q3-test` experiment |
 
 Test folder names identify the run and destination; comparison names also include
 the algorithm and repetition. Every test gets its own TCP plots. `destinations` logs
@@ -164,4 +172,5 @@ Check `cwnd`, `rtt`, `bytes_acked`, and retransmissions against nearby CSV sampl
 | `tcp_info.py`, `measurement.py` | TCP decoding, sample records, and saving/loading traces |
 | `destinations.py` | Random destinations and replacement attempts |
 | `comparison.py` | Repetitions, algorithm selection, and experiment manifest |
-| `plots.py`, `comparison_plots.py`, `reviewed_report.py` | Plots, statistics, and reports |
+| `plots.py`, `comparison_plots.py` | Plots, statistics, and comparison summaries |
+| `report.py`, `REPORT.md` | Submission PDF: prose in `REPORT.md`, figures/tables/code links generated |

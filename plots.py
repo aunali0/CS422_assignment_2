@@ -60,11 +60,13 @@ def run_title(meta: RunMetadata) -> str:
     )
 
 
-def plot_time_series(meta: RunMetadata, samples: list[Sample], path: Path) -> None:
+def plot_time_series(
+    meta: RunMetadata, samples: list[Sample], path: Path, figsize: tuple[float, float] = (11, 12)
+) -> None:
     # Q2(b)(i): snd_cwnd, RTT, loss proxy and goodput against time.
     times = values(samples, lambda s: s.time)
 
-    fig, axes = plt.subplots(4, 1, figsize=(11, 12), sharex=True, layout="constrained")
+    fig, axes = plt.subplots(4, 1, figsize=figsize, sharex=True, layout="constrained")
     fig.suptitle(run_title(meta), fontsize=12, color=TEXT_COLOR)
     cwnd_ax, rtt_ax, loss_ax, goodput_ax = axes
 
@@ -133,12 +135,14 @@ def plot_time_series(meta: RunMetadata, samples: list[Sample], path: Path) -> No
     goodput_ax.set_xlim(left=0)
 
     fig.align_ylabels(axes)
-    fig.savefig(path, format="pdf", bbox_inches="tight")
+    fig.savefig(path, dpi=200, bbox_inches="tight")
     plt.close(fig)
     log_message("test", f"Time series saved to {path}")
 
 
-def plot_scatter(meta: RunMetadata, samples: list[Sample], path: Path) -> None:
+def plot_scatter(
+    meta: RunMetadata, samples: list[Sample], path: Path, figsize: tuple[float, float] = (15, 5)
+) -> None:
     # Q2(b)(ii): each TCP metric against the goodput measured over the same interval.
     goodput = values(samples, lambda s: s.goodput)
     panels = (
@@ -151,7 +155,7 @@ def plot_scatter(meta: RunMetadata, samples: list[Sample], path: Path) -> None:
         ),
     )
 
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5), sharey=True, layout="constrained")
+    fig, axes = plt.subplots(1, 3, figsize=figsize, sharey=True, layout="constrained")
     fig.suptitle(run_title(meta), fontsize=12, color=TEXT_COLOR)
 
     for ax, (label, x, color) in zip(axes, panels, strict=True):
@@ -163,7 +167,7 @@ def plot_scatter(meta: RunMetadata, samples: list[Sample], path: Path) -> None:
         ax.set_ylim(bottom=0)
         style_axes(ax)
 
-    fig.savefig(path, format="pdf", bbox_inches="tight")
+    fig.savefig(path, dpi=200, bbox_inches="tight")
     plt.close(fig)
     log_message("test", f"Scatter plots saved to {path}")
 
@@ -193,7 +197,12 @@ def by_destination(runs: list[Run]) -> dict[str, list[Run]]:
     return {destination: sorted(group, key=run_order) for destination, group in groups.items()}
 
 
-def plot_destinations(runs: list[Run], path: Path, pdf: PdfPages | None = None) -> None:
+def plot_destinations(
+    runs: list[Run],
+    path: Path,
+    pdf: PdfPages | None = None,
+    figsize: tuple[float, float] | None = None,
+) -> None:
     # Q1(c): goodput over time, one panel per destination, one line per run.
     groups = by_destination([run for run in runs if run[1]])
     if not groups:
@@ -205,7 +214,7 @@ def plot_destinations(runs: list[Run], path: Path, pdf: PdfPages | None = None) 
     fig, axes = plt.subplots(
         rows,
         cols,
-        figsize=(11, 3.6 * rows + 0.8),
+        figsize=figsize or (11, 3.6 * rows + 0.8),
         sharex=True,
         sharey=True,
         squeeze=False,
@@ -248,16 +257,19 @@ def plot_destinations(runs: list[Run], path: Path, pdf: PdfPages | None = None) 
         frameon=False,
     )
 
-    fig.savefig(path, format="pdf", bbox_inches="tight")
+    fig.savefig(path, dpi=200, bbox_inches="tight")
     if pdf is not None:
         pdf.savefig(fig, bbox_inches="tight")
     plt.close(fig)
     log_message("destinations", f"Goodput plot saved to {path}")
 
 
-def save_summary_table(runs: list[Run], path: Path) -> None:
-    # Q1(c): min / median / mean / P95 goodput for each destination and algorithm,
-    # pooling the samples of repeated runs.
+SUMMARY_COLUMNS = ["Destination", "Algorithm", "Runs", "Min", "Median", "Mean", "P95"]
+
+
+def summary_rows(runs: list[Run]) -> list[list[str]]:
+    """Q1(c): min / median / mean / P95 goodput (Mbit/s) per destination and algorithm,
+    pooling the samples of repeated runs."""
     pooled: dict[tuple[str, str], list[float]] = defaultdict(list)
     counts: dict[tuple[str, str], int] = defaultdict(int)
     for group in by_destination(runs).values():
@@ -267,7 +279,7 @@ def save_summary_table(runs: list[Run], path: Path) -> None:
                 pooled[key] += [s.goodput for s in samples]
                 counts[key] += 1
 
-    rows = [
+    return [
         [
             destination,
             algorithm,
@@ -276,6 +288,10 @@ def save_summary_table(runs: list[Run], path: Path) -> None:
         ]
         for (destination, algorithm), g in pooled.items()
     ]
+
+
+def save_summary_table(runs: list[Run], path: Path) -> None:
+    rows = summary_rows(runs)
 
     fig, ax = plt.subplots(figsize=(11.7, 0.9 + 0.3 * (len(rows) + 1)), layout="constrained")
     ax.set_axis_off()
@@ -289,7 +305,7 @@ def save_summary_table(runs: list[Run], path: Path) -> None:
     if rows:
         table = ax.table(
             cellText=rows,
-            colLabels=["Destination", "Algorithm", "Runs", "Min", "Median", "Mean", "P95"],
+            colLabels=SUMMARY_COLUMNS,
             colWidths=[0.40, 0.11, 0.07, 0.10, 0.10, 0.10, 0.10],
             cellLoc="center",
             bbox=[0, 0, 1, 1],
@@ -305,7 +321,7 @@ def save_summary_table(runs: list[Run], path: Path) -> None:
     else:
         ax.text(0, 0.5, "No successful tests to summarize.", fontsize=12, color=MUTED_COLOR)
 
-    fig.savefig(path, format="pdf", bbox_inches="tight")
+    fig.savefig(path, dpi=200, bbox_inches="tight")
     plt.close(fig)
     log_message("destinations", f"Summary saved to {path}")
 

@@ -128,7 +128,9 @@ def matched_destinations(manifest, runs):
     return matched
 
 
-def plot_comparison(runs, algorithms, destination, times_pdf, scatter_pdf, pdf=None):
+def plot_comparison(
+    runs, algorithms, destination, times_pdf, scatter_pdf, pdf=None, figsizes=None
+):
     # Q3(a): the Q2(b) plots for every algorithm at one destination. One column per
     # algorithm and one line/marker style per repetition; each metric row shares its
     # scale across columns so the algorithms can be compared directly.
@@ -137,13 +139,15 @@ def plot_comparison(runs, algorithms, destination, times_pdf, scatter_pdf, pdf=N
     ]
 
     for kind, path in (("time series", times_pdf), ("scatter", scatter_pdf)):
+        if path is None and pdf is None:
+            continue
         time_series = kind == "time series"
         metrics = METRICS if time_series else METRICS[:3]
         fig, axes = plt.subplots(
             len(metrics),
             len(algorithms),
             squeeze=False,
-            figsize=(5 * len(algorithms), 12 if time_series else 10),
+            figsize=figsizes[kind] if figsizes else (5 * len(algorithms), 12 if time_series else 10),
             sharex=True if time_series else "row",
             sharey="row" if time_series else True,
             layout="constrained",
@@ -188,7 +192,8 @@ def plot_comparison(runs, algorithms, destination, times_pdf, scatter_pdf, pdf=N
         for row, (label, _) in enumerate(metrics):
             axes[row, 0].set_ylabel(label if time_series else "Goodput (Mbit/s)")
 
-        fig.savefig(path, bbox_inches="tight", pad_inches=0.15)
+        if path is not None:
+            fig.savefig(path, dpi=200, bbox_inches="tight", pad_inches=0.15)
         if pdf is not None:
             pdf.savefig(fig, bbox_inches="tight", pad_inches=0.15)
         plt.close(fig)

@@ -15,7 +15,6 @@ from measurement import load_run, percentile
 from comparison_plots import build_report, run_statistics, plot_comparison
 from destinations import Server, run_destinations
 import matplotlib.pyplot as plt
-from reviewed_report import build_reviewed_report
 from dataclasses import replace
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -145,12 +144,6 @@ class ComparisonTests(unittest.TestCase):
                          "reports/destination-algorithm-statistics.csv"):
                 self.assertGreater((out / name).stat().st_size, 100)
             self.assertIn("cubic", (out / "reports/algorithm-comparison-report.md").read_text())
-            build_reviewed_report(manifest, runs, out)
-            self.assertGreater((out / "reports/reviewed-algorithm-comparison.pdf").stat().st_size, 100)
-            self.assertTrue((out / "plots/reviewed-report-figures/algorithm-metrics-over-time.pdf").exists())
-            with patch("reviewed_report.PdfPages") as pdf:
-                build_reviewed_report({**manifest, "run_id": "another-experiment"}, runs, out)
-                pdf.assert_not_called()
 
     def test_common_axes_include_later_algorithms(self):
         meta, samples = load_run(BASELINE)
@@ -196,6 +189,25 @@ class ComparisonTests(unittest.TestCase):
             build_report(manifest, [({"repetition": 1}, run)], out)
             self.assertIn("no measured algorithm comparison", (out / "reports/algorithm-comparison-report.md").read_text())
             self.assertFalse((out / "reports/destination-algorithm-statistics.csv").exists())
+
+
+class ReportTests(unittest.TestCase):
+    def test_report_builds_from_saved_measurements(self):
+        import report
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            report, "FIGURES_DIR", Path(directory) / "figures"
+        ):
+            output = report.build_report(Path(directory) / "report.pdf")
+            self.assertGreater(output.stat().st_size, 100_000)
+
+    def test_code_links_resolve_to_the_matching_line(self):
+        import report
+        url = report.code_link("client.py#def run_test", "abc1234")
+        line = int(url.rsplit("#L", 1)[1])
+        source = (ROOT / "client.py").read_text().splitlines()
+        self.assertIn("def run_test", source[line - 1])
+        with self.assertRaises(ValueError):
+            report.code_link("client.py#no such text", "abc1234")
 
 
 if __name__ == "__main__":

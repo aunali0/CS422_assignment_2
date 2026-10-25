@@ -12,7 +12,6 @@ from client import ClientConfig, try_run_test
 from comparison_plots import build_report
 from destinations import load_servers
 from measurement import create_run_directory, load_run, save_run
-from reviewed_report import build_reviewed_report
 from tcp_info import get_tcp_algorithm, get_tcp_info
 
 
@@ -50,16 +49,21 @@ def write_manifest(path: Path, manifest: dict) -> None:
     temporary.replace(path)
 
 
-def analyze_manifest(path: Path) -> None:
-    """Rebuild every comparison output from the saved measurements; no network needed."""
+def load_comparison(path: Path) -> tuple[dict, list]:
+    """The manifest and (test, run) pairs for every successful test of a comparison."""
     manifest = json.loads(path.read_text())
     runs = [
         (test, load_run(path.parent / test["csv"]))
         for test in manifest["tests"]
         if test["status"] == "ok"
     ]
+    return manifest, runs
+
+
+def analyze_manifest(path: Path) -> None:
+    """Rebuild every comparison output from the saved measurements; no network needed."""
+    manifest, runs = load_comparison(path)
     build_report(manifest, runs, path.parent)
-    build_reviewed_report(manifest, runs, path.parent)
 
 
 def run_comparison(args, cfg: ClientConfig, run_id: str) -> bool:

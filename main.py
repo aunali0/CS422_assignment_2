@@ -28,11 +28,18 @@ def analyze(path: Path) -> None:
 def main() -> None:
     logging.basicConfig(level=logging.DEBUG, format="%(message)s")
     logging.getLogger("matplotlib").setLevel(logging.WARNING)
+    logging.getLogger("PIL").setLevel(logging.WARNING)
 
     args = create_parser().parse_args()
 
     if args.command == "analyze":
         analyze(args.path)
+        return
+
+    if args.command == "report":
+        from report import build_report  # needs reportlab only when building the PDF
+
+        build_report()
         return
 
     run_id = args.run_id or datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")

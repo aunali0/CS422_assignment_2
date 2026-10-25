@@ -189,6 +189,13 @@ def add_test_command(commands):
     add_client_args(test)
 
 
+def add_report_command(commands):
+    commands.add_parser(
+        "report",
+        help="Build the submission PDF from REPORT.md and the saved measurements (offline)",
+    )
+
+
 def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="CLI for CS422 Assignment 2")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -197,5 +204,6 @@ def create_parser() -> argparse.ArgumentParser:
     add_destinations_command(commands)
     add_compare_command(commands)
     add_analyze_command(commands)
+    add_report_command(commands)
 
     return parser
